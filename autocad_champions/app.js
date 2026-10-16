@@ -44,9 +44,9 @@ function renderTeacher(){
    const span=2**(r-rounds[0]);
    const nodes=standard.filter(m=>m.round===r).sort((a,b)=>a.slot-b.slot).map(m=>
     `<div class="tree-node ${r===last?'tree-final':''}" style="grid-column:${m.slot*span+1} / span ${span}"><div class="tree-card"><div class="match-number">${r===last?'🏆 Grande final':`Confronto ${m.slot+1}`}</div>${card(m)}</div></div>`).join('');
-   return `<section class="tree-round ${r===current?'current-round':''}"><h3>${labels(r)}${r===current?' · Em andamento':''}</h3><div class="tree-row" style="grid-template-columns:repeat(${leaves},minmax(170px,1fr))">${nodes}</div></section>`;
+   return `<section class="tree-round ${r===current?'current-round':''}" style="--round-slots:${leaves/span}"><h3>${labels(r)}${r===current?' · Em andamento':''}</h3><div class="tree-row" style="grid-template-columns:repeat(${leaves},minmax(0,1fr))">${nodes}</div></section>`;
   }).join('');
-  $('bracket').innerHTML=`<p class="tree-help">Leia de baixo para cima ↑ · Cada dupla de confrontos alimenta o confronto acima. Arraste para os lados para acompanhar toda a chave.</p><div class="tree-scroll"><div class="tree-canvas">${tree}</div></div><aside class="third-place"><h3>🥉 Disputa de terceiro lugar</h3><p class="muted">Entre os dois perdedores das semifinais</p>${third?card(third):'Aguardando semifinalistas'}</aside>`;
+  $('bracket').innerHTML=`<p class="tree-help">DA BASE AO TOPO <span>↑</span> Acompanhe o caminho até a grande final</p><div class="tree-scroll"><div class="tree-canvas">${tree}</div></div><aside class="third-place"><h3>🥉 Disputa de terceiro lugar</h3><p class="muted">Entre os dois perdedores das semifinais</p>${third?card(third):'Aguardando semifinalistas'}</aside>`;
  }
  if(final?.winner&&third?.winner){
   const runner=final.winner===final.p1?final.p2:final.p1;
@@ -54,7 +54,7 @@ function renderTeacher(){
   $('podium').innerHTML=`<h3>🏆 PÓDIO DOS CAMPEÕES</h3><div class="podium-stands">${place(2,runner,'🥈','second')}${place(1,final.winner,'🏆','first')}${place(3,third.winner,'🥉','third')}</div>`;
  } else $('podium').innerHTML='<h3>🏆 PÓDIO DOS CAMPEÕES</h3><div class="podium-pending">🥇 🥈 🥉<p>O pódio será revelado ao término da final e da disputa de terceiro lugar.</p></div>';
 }
-function card(m){const bye=!!m.winner&&(!m.p1||!m.p2);const name=(p,score)=>`<div class="competitor ${m.winner===p&&p?'win':''}"><span>${esc(p||(bye?'Sem adversário':'A definir'))}</span><strong>${p?(score??'–'):''}${m.winner===p&&p?' ✓':''}</strong></div>`;
+function card(m){const bye=!!m.winner&&(!m.p1||!m.p2);const name=(p,score)=>`<div class="competitor ${m.winner===p&&p?'win':''}"><span title="${esc(p||(bye?'Sem adversário':'A definir'))}">${esc(p||(bye?'Sem adversário':'A definir'))}</span><strong>${p?(score??'–'):''}${m.winner===p&&p?' ✓':''}</strong></div>`;
  return `<div class="match ${bye?'automatic':''}"><small>${m.status==='empty'?'Sem participantes':bye?'Classificação automática':m.winner?'Concluído':m.p1&&m.p2?'Em disputa':'Aguardando classificados'}</small>${name(m.p1,m.s1)}${name(m.p2,m.s2)}</div>`}
 function renderQuiz(){const a=state.active,qs=state.questions||[],answered=state.answers||[];const next=qs.find(q=>!answered.some(x=>x.id===q.id));
  $('duel').textContent=`Rodada ${a.round} · ${esc(state.matches.find(m=>m.id===a.id)?.p1||'')} × ${esc(state.matches.find(m=>m.id===a.id)?.p2||'')}`;
@@ -75,4 +75,8 @@ $('reset').onclick=async()=>{
 };
 $('teacher-form').onsubmit=async e=>{e.preventDefault();try{const {error:e}=await db.auth.signInWithPassword({email:$('email').value,password:$('password').value});if(e)throw e;await refresh()}catch(e){error(e)}};
 $('logout').onclick=async()=>{await db.auth.signOut();location.reload()};
+function projection(enabled){document.body.classList.toggle('projection-mode',enabled);$('projection').setAttribute('aria-pressed',String(enabled))}
+$('projection').onclick=()=>projection(true);
+$('projection-exit').onclick=()=>projection(false);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')projection(false)});
 init();

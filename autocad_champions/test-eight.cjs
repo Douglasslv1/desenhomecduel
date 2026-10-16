@@ -26,6 +26,12 @@ async function main(){
   return;
  }
  if(sessions.length!==total)throw Error(`É necessário cadastrar ${total} sessões primeiro`);
+ const initial=await rpc(sessions[0],'ac_state');
+ if(!initial.started)throw Error('O professor ainda não iniciou o campeonato');
+ const automatic=initial.matches.filter(m=>!m.third&&!!m.winner&&(!m.p1||!m.p2));
+ if(automatic.length!==2**Math.ceil(Math.log2(total))-total||automatic.some(m=>m.round!==1))throw Error('Distribuição incorreta das classificações automáticas');
+ console.log(`Chave conferida: ${automatic.length} classificações automáticas, todas na primeira fase.`);
+ const questionSets=new Map();
  let submitted=0;
  for(let pass=0;pass<12;pass++){
   let progress=false;
@@ -35,6 +41,9 @@ async function main(){
    const match=state.matches.find(m=>m.id===state.active.id);if(!match)throw Error('Duelo ausente da chave');
    const remaining=state.questions.filter(q=>!state.answers.some(a=>a.id===q.id));
    if(state.questions.length!==10)throw Error('Duelo não possui dez questões');
+   const questionSet=JSON.stringify(state.questions);
+   if(questionSets.has(match.id)&&questionSets.get(match.id)!==questionSet)throw Error('Perguntas diferentes entre adversários');
+   questionSets.set(match.id,questionSet);
    for(const q of remaining){const answer=await rpc(session,'ac_answer',{p_match:state.active.id,p_question:q.id,p_choice:(i+q.id)%q.op.length});if(typeof answer.correct!=='boolean')throw Error('Resposta sem validação');submitted++;progress=true}
    if(remaining.length)console.log(`${session.name}: concluiu dez questões da rodada ${state.active.round}`);
   }
@@ -44,6 +53,9 @@ async function main(){
  const expectedSlots=2**Math.ceil(Math.log2(total));
  if(state.matches.length!==expectedSlots||state.matches.some(m=>!m.winner)||!final?.winner||!third?.winner)throw Error('Campeonato ainda não foi concluído');
  const played=state.matches.filter(m=>m.p1&&m.p2);if(played.length!==total)throw Error('Número incorreto de duelos disputados');
- console.log(JSON.stringify({submitted,duels:state.matches.length,champion:final.winner,runnerUp:final.winner===final.p1?final.p2:final.p1,third:third.winner},null,2));
+ if(played.some(m=>!m.done1||!m.done2||m.s1<0||m.s1>10||m.s2<0||m.s2>10))throw Error('Pontuação ou conclusão inconsistente');
+ const report={participants:total,submitted,automatic:automatic.length,played:played.length,bracketCards:state.matches.length,champion:final.winner,runnerUp:final.winner===final.p1?final.p2:final.p1,third:third.winner,matches:state.matches};
+ fs.writeFileSync(path.join(__dirname,`resultado-teste-${total}.json`),JSON.stringify(report,null,2));
+ console.log(JSON.stringify({...report,matches:undefined},null,2));
 }
 main().catch(e=>{console.error(e.message);process.exitCode=1});

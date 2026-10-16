@@ -39,3 +39,9 @@
 - Validação local: `node test-bracket.cjs` simula a distribuição e progressão de 4 a 64 participantes. Não substitui a validação das funções SQL no Supabase.
 - Para 26 participantes: 6 avanços automáticos na fase de 32; 10 duelos iniciais, 8 nas oitavas, 4 nas quartas, 2 nas semifinais, final e terceiro lugar. Total de 26 duelos e 520 respostas.
 - Teste na instância: após o professor arquivar a edição anterior, `node test-eight.cjs register 26` cadastra as sessões. Depois do sorteio pelo professor, `node test-eight.cjs play 26` executa as respostas. As sessões ficam apenas no diretório temporário local; não publique arquivos de sessão.
+## Painel compacto para projeção
+- A chave usa colunas flexíveis, ocupando a largura da página, sem os 170 px mínimos por confronto.
+- A lista de participantes fica recolhida e pode ser expandida. Os nomes nos cards quebram linha e também aparecem completos ao manter o ponteiro sobre eles.
+- O botão “Modo projeção” recolhe cabeçalho, lista, controles e pódio para destacar a chave; use “Sair da projeção” ou Escape para voltar. Continua atualizando a cada 2,5 segundos.
+- Republique apenas `index.html` e `app.js`. Esta alteração não exige SQL nem reinício do campeonato.
+- `preview-26.html` mostra a versão compacta com dados simulados. A visualização local pelo navegador automatizado não está disponível nesta sessão.

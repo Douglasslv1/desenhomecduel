@@ -19,12 +19,14 @@ function tournament(n){
 }
 for(let n=4;n<=64;n++)tournament(n);
 const sample=tournament(26),elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{hidden:true});return elements.get(id)};
-const ctx=vm.createContext({window:{supabase:{createClient:()=>({})}},URLSearchParams,location:{search:'?professor=true'},document:{getElementById:el},console});
+const ctx=vm.createContext({window:{supabase:{createClient:()=>({})}},URLSearchParams,location:{search:'?professor=true'},document:{getElementById:el,addEventListener:()=>{}},console});
 vm.runInContext(fs.readFileSync('app.js','utf8').replace(/init\(\);\s*$/,''),ctx);
 ctx.sample={started:true,players:Array.from({length:26},(_,i)=>({name:`Teste ${i+1}`})),matches:sample.matches};vm.runInContext('state=sample;renderTeacher()',ctx);
 assert.equal((el('bracket').innerHTML.match(/class="tree-node /g)||[]).length,31);
 assert.ok(el('bracket').innerHTML.indexOf('Grande final')<el('bracket').innerHTML.indexOf('Fase de 32'));
 assert.ok(el('bracket').innerHTML.includes('third-place'));
+assert.ok(el('bracket').innerHTML.includes('repeat(16,minmax(0,1fr))'));
+assert.ok(!el('bracket').innerHTML.includes('minmax(170px'));
 let html=fs.readFileSync('index.html','utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'');
 const teacher=html.indexOf('<section id="teacher"');
 html=html.slice(0,teacher)+html.slice(teacher).replace('class="panel" hidden','class="panel"');
@@ -35,5 +37,6 @@ for(const id of ['stage-banner','roster','bracket','podium']){
  const content=id==='stage-banner'?'PRÉVIA LOCAL · 26 participantes fictícios · Resultado simulado':el(id).innerHTML;
  html=html.slice(0,contentStart)+content+html.slice(end);
 }
+html=html.replace('</body>',`<script>const setProjection=enabled=>{document.body.classList.toggle('projection-mode',enabled);document.getElementById('projection').setAttribute('aria-pressed',String(enabled))};document.getElementById('projection').onclick=()=>setProjection(true);document.getElementById('projection-exit').onclick=()=>setProjection(false);document.addEventListener('keydown',e=>{if(e.key==='Escape')setProjection(false)});</script></body>`);
 fs.writeFileSync('preview-26.html',html);
 console.log(`OK: simulação de 4 a 64 participantes; 26 participantes = ${sample.byes} avanços automáticos, ${sample.played} duelos, ${sample.rounds} fases. Prévia gerada.`);

@@ -2,7 +2,7 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const elements=new Map();
 const el=id=>{if(!elements.has(id))elements.set(id,{hidden:false,disabled:false,textContent:'',innerHTML:''});return elements.get(id)};
 let result={admin:true,registered:true,started:true,players:[],matches:[]},calls=[],confirmed=true,fail=false;
-const context=vm.createContext({window:{supabase:{createClient:()=>({})}},location:{search:'?professor=true'},URLSearchParams,document:{getElementById:el},console,confirm:()=>confirmed});
+const context=vm.createContext({window:{supabase:{createClient:()=>({})}},location:{search:'?professor=true'},URLSearchParams,document:{getElementById:el,addEventListener:()=>{}},console,confirm:()=>confirmed});
 vm.runInContext(fs.readFileSync('app.js','utf8').replace(/init\(\);\s*$/,''),context);
 context.mockRpc=async fn=>{calls.push(fn);if(fn==='ac_reset'){if(fail)throw Error('Falha de teste');result={...result,started:false};return 'archive-id'}return result};
 vm.runInContext('rpc=mockRpc',context);
@@ -12,7 +12,7 @@ vm.runInContext('rpc=mockRpc',context);
  confirmed=false;await el('reset').onclick();assert.equal(calls.includes('ac_reset'),false);
  confirmed=true;await el('reset').onclick();assert.equal(result.started,false);assert.equal(el('reset').hidden,true);assert.equal(el('reset').disabled,false);
  result={...result,started:true};fail=true;await vm.runInContext('refresh()',context);await el('reset').onclick();assert.equal(el('message').textContent,'Falha de teste');assert.equal(el('reset').disabled,false);
- const student=vm.createContext({window:{supabase:{createClient:()=>({})}},location:{search:''},URLSearchParams,document:{getElementById:el},console});
+ const student=vm.createContext({window:{supabase:{createClient:()=>({})}},location:{search:''},URLSearchParams,document:{getElementById:el,addEventListener:()=>{}},console});
  vm.runInContext(fs.readFileSync('app.js','utf8').replace(/init\(\);\s*$/,''),student);
  result={registered:false,started:true};student.mockRpc=async()=>result;vm.runInContext('rpc=mockRpc',student);
  await vm.runInContext('refresh()',student);assert.equal(el('join-btn').disabled,true);

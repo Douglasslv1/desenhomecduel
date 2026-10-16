@@ -33,7 +33,7 @@
             </button>
         </section>
 
-        <!-- TELA DO ALUNO: ESPERA / DUELO -->
+        <!-- TELA DO ALUNO: ESPERA -->
         <section id="view-aluno-espera" class="w-full max-w-md bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700 text-center hidden">
             <div class="animate-pulse text-red-400 text-5xl mb-4">⏳</div>
             <h2 class="text-2xl font-bold mb-2 text-white">Você está na Sala!</h2>
@@ -41,6 +41,20 @@
             <div id="aluno-status-msg" class="bg-slate-900 p-4 rounded-xl border border-slate-700 text-slate-300 font-semibold">
                 Aguardando o professor iniciar o torneio...
             </div>
+        </section>
+
+        <!-- TELA DO ALUNO: ARENA DE PERGUNTAS -->
+        <section id="view-aluno-duelo" class="w-full max-w-lg bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700 hidden">
+            <div class="text-center mb-4">
+                <span id="aluno-fase-txt" class="text-red-400 font-bold text-sm uppercase">Duelo Ativo</span>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 mb-6 text-center">
+                <div class="text-xs text-slate-400 mb-1">Seu Confronto:</div>
+                <div id="aluno-confronto-txt" class="text-lg font-bold text-white">-- VS --</div>
+            </div>
+            <h3 id="aluno-pergunta-txt" class="text-base font-semibold mb-6 text-white leading-relaxed">Aguardando pergunta...</h3>
+            <div id="aluno-opcoes-container" class="grid grid-cols-1 gap-2.5 mb-6"></div>
+            <div id="aluno-feedback" class="hidden text-center p-3 rounded-xl font-semibold"></div>
         </section>
 
         <!-- TELA DO PROFESSOR: PAINEL DE CONTROLE -->
@@ -81,6 +95,13 @@
         const isProfessor = window.location.search.includes('professor=true');
         let meuNome = localStorage.getItem('autocad_aluno_nome') || '';
 
+        const bancoPerguntas = [
+            { q: "1. Qual comando é mais adequado para produzir uma transformação simétrica (reflexão) em relação a um eixo indicado?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) ROTATE", "E) MOVE"], c: 2 },
+            { q: "2. Qual comando permite gerar cópias paralelas mantendo uma distância definida?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) TRIM", "E) ROTATE"], c: 1 },
+            { q: "3. Qual comando é utilizado para arredondar o encontro entre duas linhas, criando um raio definido?", op: ["A) TRIM", "B) FILLET", "C) CHAMFER", "D) OFFSET", "E) EXTEND"], c: 1 },
+            { q: "4. Qual comando cria uma cópia de um objeto sem apagar o original?", op: ["A) MOVE", "B) COPY", "C) JOIN", "D) TRIM", "E) FILLET"], c: 1 }
+        ];
+
         window.onload = async () => {
             if (isProfessor) {
                 document.getElementById('painel-badge').textContent = "Painel do Professor (Projetor)";
@@ -88,11 +109,12 @@
                 document.getElementById('view-professor').classList.remove('hidden');
                 document.getElementById('view-aluno-login').classList.add('hidden');
                 carregarAlunosProfessor();
-                inscreverRealtime();
+                inscreverRealtimeProfessor();
             } else if (meuNome) {
                 document.getElementById('view-aluno-login').classList.add('hidden');
                 document.getElementById('view-aluno-espera').classList.remove('hidden');
                 document.getElementById('aluno-status-msg').textContent = `Conectado como: ${meuNome}. Aguardando o professor...`;
+                inscreverRealtimeAluno();
             }
         };
 
@@ -109,12 +131,12 @@
             document.getElementById('view-aluno-login').classList.add('hidden');
             document.getElementById('view-aluno-espera').classList.remove('hidden');
             document.getElementById('aluno-status-msg').textContent = `Conectado como: ${meuNome}. Aguardando o professor...`;
+            inscreverRealtimeAluno();
         }
 
         async function carregarAlunosProfessor() {
-            const { data, error } = await supabaseClient.from('participantes').select('*');
-            if(error) return;
-            atualizarListaProfessor(data);
+            const { data } = await supabaseClient.from('participantes').select('*');
+            if(data) atualizarListaProfessor(data);
         }
 
         function atualizarListaProfessor(alunos) {
@@ -134,13 +156,59 @@
             `).join('');
         }
 
-        function inscreverRealtime() {
+        function inscreverRealtimeProfessor() {
             supabaseClient
                 .channel('room_profs')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'participantes' }, payload => {
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'participantes' }, () => {
                     carregarAlunosProfessor();
                 })
                 .subscribe();
+        }
+
+        function inscreverRealtimeAluno() {
+            supabaseClient
+                .channel('room_alunos_' + meuNome)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'duelos' }, payload => {
+                    const duelo = payload.new;
+                    if(duelo.aluno_1 === meuNome || duelo.aluno_2 === meuNome) {
+                        abrirTelaDueloAluno(duelo);
+                    }
+                })
+                .subscribe();
+        }
+
+        function abrirTelaDueloAluno(duelo) {
+            document.getElementById('view-aluno-espera').classList.add('hidden');
+            document.getElementById('view-aluno-duelo').classList.remove('hidden');
+            document.getElementById('aluno-fase-txt').textContent = `Fase: ${duelo.rodada}`;
+            document.getElementById('aluno-confronto-txt').textContent = `${duelo.aluno_1} VS ${duelo.aluno_2}`;
+            document.getElementById('aluno-pergunta-txt').textContent = duelo.pergunta_texto;
+
+            const opContainer = document.getElementById('aluno-opcoes-container');
+            const ops = [duelo.opcao_a, duelo.opcao_b, duelo.opcao_c, duelo.opcao_d, duelo.opcao_e];
+            
+            opContainer.innerHTML = ops.map((opcao, i) => `
+                <button onclick="alunoResponder(${duelo.id}, ${i}, ${duelo.opcao_correta})" 
+                    class="w-full text-left bg-slate-900 hover:bg-slate-700 border border-slate-700 p-3.5 rounded-xl text-sm font-medium transition duration-200 cursor-pointer">
+                    ${opcao}
+                </button>
+            `).join('');
+        }
+
+        async function alunoResponder(dueloId, escolhida, correta) {
+            const feedback = document.getElementById('aluno-feedback');
+            feedback.classList.remove('hidden');
+
+            const botoes = document.querySelectorAll('#aluno-opcoes-container button');
+            botoes.forEach(b => b.disabled = true);
+
+            if(escolhida === correta) {
+                feedback.className = "text-center p-3 rounded-xl font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                feedback.textContent = "🎉 Resposta Correta! Aguardando resultado do duelo...";
+            } else {
+                feedback.className = "text-center p-3 rounded-xl font-semibold bg-red-500/20 text-red-400 border border-red-500/30";
+                feedback.textContent = "❌ Resposta Incorreta!";
+            }
         }
 
         function embaralhar(array) {
@@ -149,7 +217,7 @@
 
         async function profIniciarTorneio() {
             const { data: alunos } = await supabaseClient.from('participantes').select('*');
-            if(!alunos || alunos.length < 2) return alert("É preciso pelo menos 2 alunos conectados para gerar as chaves!");
+            if(!alunos || alunos.length < 2) return alert("É preciso pelo menos 2 alunos conectados!");
             
             let nomes = alunos.map(a => a.nome);
             let embaralhados = embaralhar(nomes);
@@ -157,9 +225,31 @@
                 embaralhados.push("Robô CAD 🤖");
             }
 
+            // Limpa duelos anteriores na base de dados
+            await supabaseClient.from('duelos').delete().neq('rodada', 'EXCLUIR_TUDO');
+
             let confrontos = [];
             for(let i = 0; i < embaralhados.length; i += 2) {
-                confrontos.push({ p1: embaralhados[i], p2: embaralhados[i+1] });
+                let p1 = embaralhados[i];
+                let p2 = embaralhados[i+1];
+                let q = bancoPerguntas[Math.floor(Math.random() * bancoPerguntas.length)];
+
+                // Insere o duelo no Supabase, disparando em tempo real para os telemóveis dos alunos
+                await supabaseClient.from('duelos').insert([{
+                    rodada: 'Oitavas de Final',
+                    aluno_1: p1,
+                    aluno_2: p2,
+                    pergunta_texto: q.q,
+                    opcao_a: q.op[0],
+                    opcao_b: q.op[1],
+                    opcao_c: q.op[2],
+                    opcao_d: q.op[3],
+                    opcao_e: q.op[4],
+                    opcao_correta: q.c,
+                    status: 'pendente'
+                }]);
+
+                confrontos.push({ p1, p2 });
             }
 
             document.getElementById('prof-area-chaveamento').classList.remove('hidden');
@@ -172,7 +262,7 @@
                 </div>
             `).join('');
 
-            alert(`Chaveamento gerado com sucesso para ${embaralhados.length} participantes!`);
+            alert("Torneio iniciado! As perguntas foram enviadas para os telemóveis dos alunos.");
         }
     </script>
 </body>

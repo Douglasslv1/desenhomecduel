@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoCAD Champions: O Duelo de Titãs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <!-- HEADER -->
+    <header class="bg-slate-800 border-b border-slate-700 py-4 px-8 shadow-md flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-red-500 flex items-center gap-2">
+            ⚙️ AutoCAD Champions: <span class="text-white text-lg font-normal">Duelo de Titãs</span>
+        </h1>
+        <div id="status-fase" class="text-sm bg-slate-700 px-4 py-1.5 rounded-full text-slate-300 font-semibold">
+            Aguardando Alunos...
+        </div>
+    </header>
+
+    <!-- CONTAINER PRINCIPAL -->
+    <main class="container mx-auto px-4 py-8 flex-grow flex flex-col items-center justify-center">
+
+        <!-- TELA 1: CADASTRO DE ALUNOS -->
+        <section id="tela-inscricao" class="w-full max-w-xl bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700">
+            <h2 class="text-2xl font-bold mb-2 text-center text-red-400">Insira seu Nome para o Duelo</h2>
+            <p class="text-slate-400 text-center mb-6 text-sm">Digite seu nome ou apelido para entrar na arena e disputar o pódio!</p>
+            
+            <div class="flex gap-2 mb-6">
+                <input type="text" id="input-nome" placeholder="Ex: João da Mecânica" 
+                    class="flex-grow bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500">
+                <button onclick="adicionarAluno()" class="bg-red-600 hover:bg-red-700 font-semibold px-6 py-3 rounded-xl transition duration-200 shadow-lg cursor-pointer">
+                    Entrar
+                </button>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-sm font-semibold text-slate-400 mb-2">Alunos na Arena (<span id="contador-alunos">0</span>):</h3>
+                <div id="lista-alunos" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-3 bg-slate-900 rounded-xl border border-slate-800 min-h-[60px]">
+                    <span class="text-slate-500 text-sm italic">Nenhum aluno inscrito ainda...</span>
+                </div>
+            </div>
+
+            <button onclick="iniciarTorneio()" id="btn-iniciar" disabled
+                class="w-full bg-slate-700 text-slate-400 font-bold py-3.5 rounded-xl transition duration-200 cursor-not-allowed">
+                Gerar Chaveamento (Mata-Mata) 🚀
+            </button>
+        </section>
+
+        <!-- TELA 2: CHAVEAMENTO -->
+        <section id="tela-chaveamento" class="w-full max-w-4xl bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700 hidden text-center">
+            <h2 class="text-2xl font-bold mb-2 text-red-400">Chaveamento Oficial da Rodada</h2>
+            <p class="text-slate-400 mb-6 text-sm">Confrontos definidos aleatoriamente no estilo mata-mata:</p>
+            
+            <div id="container-confrontos" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"></div>
+
+            <button onclick="comecarDueloAtual()" class="bg-emerald-600 hover:bg-emerald-700 font-bold px-8 py-3.5 rounded-xl transition duration-200 shadow-lg text-lg cursor-pointer">
+                Iniciar Perguntas da Rodada ⚔️
+            </button>
+        </section>
+
+        <!-- TELA 3: ARENA DE PERGUNTAS -->
+        <section id="tela-pergunta" class="w-full max-w-2xl bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700 hidden">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+                <span id="info-rodada-atual" class="text-red-400 font-semibold text-sm">Fase Atual</span>
+                <span id="info-duelo-atual" class="text-slate-400 text-sm">Duelo</span>
+            </div>
+
+            <div class="bg-slate-900 p-5 rounded-xl border border-slate-700 mb-6 text-center">
+                <div class="text-xs uppercase tracking-wider text-slate-500 font-bold mb-2">Confronto Ativo</div>
+                <div class="text-xl font-bold text-white flex justify-center items-center gap-4">
+                    <span id="player-1" class="text-blue-400"></span> 
+                    <span class="text-red-500 text-sm font-black italic">VS</span> 
+                    <span id="player-2" class="text-red-400"></span>
+                </div>
+            </div>
+
+            <h3 id="texto-pergunta" class="text-base font-semibold mb-6 text-white leading-relaxed">Carregando pergunta...</h3>
+
+            <div id="opcoes-container" class="grid grid-cols-1 gap-2.5 mb-6"></div>
+
+            <div id="feedback-resposta" class="hidden text-center p-3 rounded-xl font-semibold mb-4"></div>
+
+            <button id="btn-proxima" onclick="proximoDuelo()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition duration-200 hidden cursor-pointer">
+                Próximo Confronto ➡️
+            </button>
+        </section>
+
+        <!-- TELA 4: PÓDIO FINAL -->
+        <section id="tela-podio" class="w-full max-w-xl bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700 hidden text-center">
+            <h1 class="text-3xl font-bold text-yellow-400 mb-2">🏆 Pódio dos Campeões 🏆</h1>
+            <p class="text-slate-300 mb-8">Parabéns aos destaques da turma no AutoCAD 2D!</p>
+
+            <div class="space-y-4 mb-8">
+                <div class="bg-slate-900 border-2 border-yellow-500 p-4 rounded-xl flex justify-between items-center shadow-lg">
+                    <span class="font-bold text-yellow-400 text-base">🥇 1º Lugar (Prêmio Principal)</span>
+                    <span id="podio-1" class="text-lg font-bold text-white">--</span>
+                </div>
+                <div class="bg-slate-900 border-2 border-slate-400 p-4 rounded-xl flex justify-between items-center shadow-md">
+                    <span class="font-bold text-slate-300 text-base">🥈 2º Lugar</span>
+                    <span id="podio-2" class="text-base font-semibold text-white">--</span>
+                </div>
+                <div class="bg-slate-900 border-2 border-amber-600 p-4 rounded-xl flex justify-between items-center shadow-md">
+                    <span class="font-bold text-amber-500 text-base">🥉 3º Lugar</span>
+                    <span id="podio-3" class="text-base font-semibold text-white">--</span>
+                </div>
+            </div>
+
+            <button onclick="reiniciarJogo()" class="bg-red-600 hover:bg-red-700 font-bold px-8 py-3.5 rounded-xl transition duration-200 shadow-lg cursor-pointer">
+                Novo Torneio 🔄
+            </button>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="text-center py-4 text-xs text-slate-500">
+        Desenho Mecânico Digital — Sistema de Batalha de Perguntas
+    </footer>
+
+    <!-- SCRIPT DE JOGO COM 40 QUESTÕES (30 Oficiais + Extras Práticas) -->
+    <script>
+        let alunos = [];
+        let chaveamentoAtual = [];
+        let proximaChave = [];
+        let indiceDuelo = 0;
+        let faseAtualTexto = "Oitavas de Final";
+
+        // Banco com 40 Questões (As 30 oficiais da apostila + 10 práticas de CAD)[cite: 2, 3, 4, 5, 6, 7, 8, 9]
+        const bancoPerguntas = [
+            // Questões oficiais 1 a 30 extraídas do documento
+            { q: "1. Qual comando é mais adequado para produzir uma transformação simétrica (reflexão) em relação a um eixo indicado?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) ROTATE", "E) MOVE"], c: 2 },
+            { q: "2. Qual comando permite gerar cópias paralelas mantendo uma distância definida?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) TRIM", "E) ROTATE"], c: 1 },
+            { q: "3. Qual comando é utilizado para arredondar o encontro entre duas linhas, criando um raio definido?", op: ["A) TRIM", "B) FILLET", "C) CHAMFER", "D) OFFSET", "E) EXTEND"], c: 1 },
+            { q: "4. Qual comando cria uma cópia de um objeto sem apagar o original?", op: ["A) MOVE", "B) COPY", "C) JOIN", "D) TRIM", "E) FILLET"], c: 1 },
+            { q: "5. Qual comando deve ser utilizado para girar um objeto em torno de um ponto-base?", op: ["A) ROTATE", "B) MIRROR", "C) OFFSET", "D) MOVE", "E) EXTEND"], c: 0 },
+            { q: "6. Quando várias linhas formam um contorno e se deseja uni-las em um único objeto, qual comando utilizar?", op: ["A) JOIN", "B) EXPLODE", "C) TRIM", "D) OFFSET", "E) MOVE"], c: 0 },
+            { q: "7. No AutoCAD, qual comando desloca um objeto de uma posição para outra sem criar cópia?", op: ["A) COPY", "B) MOVE", "C) MIRROR", "D) ROTATE", "E) OFFSET"], c: 1 },
+            { q: "8. Qual comando remove o trecho excedente de uma linha utilizando outro objeto como limite?", op: ["A) EXTEND", "B) TRIM", "C) FILLET", "D) JOIN", "E) OFFSET"], c: 1 },
+            { q: "9. Qual comando é mais indicado para desenhar vários segmentos conectados que se comportam como um único objeto?", op: ["A) LINE", "B) POLYLINE", "C) RECTANGLE", "D) ARC", "E) MOVE"], c: 1 },
+            { q: "10. Qual comando permite criar rapidamente um contorno retangular informando dois cantos opostos?", op: ["A) CIRCLE", "B) POLYLINE", "C) RECTANGLE", "D) OFFSET", "E) TRIM"], c: 2 },
+            { q: "11. Para selecionar exatamente o ponto indicado no centro de um segmento, qual OSNAP deve ser utilizado?", op: ["A) Endpoint", "B) Midpoint", "C) Center", "D) Intersection", "E) Quadrant"], c: 1 },
+            { q: "12. Para selecionar exatamente o centro geométrico de um círculo, qual opção do OSNAP deve ser usada?", op: ["A) Endpoint", "B) Center", "C) Midpoint", "D) Nearest", "E) Intersection"], c: 1 },
+            { q: "13. Qual é a principal finalidade do OSNAP durante a construção de um desenho técnico?", op: ["A) Alterar cores", "B) Localizar pontos geométricos com precisão", "C) Criar Layers automaticamente", "D) Configurar impressão", "E) Definir escala"], c: 1 },
+            { q: "14. Qual organização de Layers é mais adequada para um desenho mecânico?", op: ["A) Um único Layer para tudo", "B) Separar contornos, eixos, cotas e outros elementos", "C) Um Layer para cada linha", "D) Usar apenas Layer 0", "E) Criar Layers na impressão"], c: 1 },
+            { q: "15. Ao desligar temporariamente um Layer, o que ocorre com os objetos pertencentes a ele?", op: ["A) São apagados", "B) Ficam temporariamente invisíveis", "C) Mudam para Layer 0", "D) São bloqueados", "E) Viram tracejados"], c: 1 },
+            { q: "16. Em representação ortogonal básica, quais são as três vistas ortogonais mais utilizadas?", op: ["A) Frontal, superior e lateral", "B) Frontal, perspectiva e isométrica", "C) Superior, inferior e perspectiva", "D) Lateral, isométrica e diagonal", "E) Frontal, diagonal e inferior"], c: 0 },
+            { q: "17. Ao observar a vista superior de uma peça, quais dimensões são representadas principalmente?", op: ["A) Altura e largura", "B) Altura e profundidade", "C) Largura e profundidade", "D) Somente altura", "E) Somente profundidade"], c: 2 },
+            { q: "18. Como é escolhida preferencialmente a vista frontal de uma peça?", op: ["A) Menor número de detalhes", "B) Posição mais característica e informativa", "C) Face de menor dimensão", "D) Pelo tamanho da folha", "E) Eliminar demais vistas"], c: 1 },
+            { q: "19. Uma aresta não visível diretamente em determinada vista pode ser representada por qual linha?", op: ["A) Linha contínua grossa", "B) Linha tracejada", "C) Linha de cota", "D) Linha de hachura", "E) Linha de chamada"], c: 1 },
+            { q: "20. O que significa a indicação aplicada a um furo com o símbolo Ø20?", op: ["A) Raio de 20 mm", "B) Diâmetro de 20 mm", "C) Profundidade de 20 mm", "D) Distância ao centro", "E) Espessura de 20 mm"], c: 1 },
+            { q: "21. Qual é a principal função das cotas em um desenho mecânico?", op: ["A) Decorar o desenho", "B) Indicar dimensões necessárias à interpretação/fabricação", "C) Substituir contornos", "D) Definir Layers", "E) Transformar em 3D"], c: 1 },
+            { q: "22. Qual é o principal problema técnico de cotar a mesma dimensão desnecessariamente mais de uma vez?", op: ["A) Falta de Layer", "B) Redundância e risco de confusão na fabricação", "C) Ausência de contorno", "D) Erro de escala", "E) Falta de perspectiva"], c: 1 },
+            { q: "23. Uma peça foi desenhada em tamanho real (1:1) e precisa ser impressa menor. Qual o procedimento adequado?", op: ["A) Redesenhar menor", "B) Alterar todas as cotas", "C) Aplicar escala adequada na viewport/impressão", "D) Usar TRIM", "E) Usar MOVE"], c: 2 },
+            { q: "24. Para representar uma redução de 200 mm reais para 50 mm impressos, qual escala corresponde?", op: ["A) 1:1", "B) 1:2", "C) 1:3", "D) 1:4", "E) 4:1"], c: 3 },
+            { q: "25. Qual formato de folha comum é frequentemente adequado para desenho técnico de peças simples e pequenas?", op: ["A) A0", "B) A1", "C) A2", "D) A3", "E) A4"], c: 4 },
+            { q: "26. Qual é a principal finalidade de representar uma peça em corte?", op: ["A) Mostrar detalhes internos pouco visíveis externamente", "B) Reduzir escala", "C) Eliminar cotas", "D) Substituir todas as vistas", "E) Criar perspectiva"], c: 0 },
+            { q: "27. O que representam normalmente as linhas inclinadas de hachura em uma vista em corte?", op: ["A) Superfícies do material atingidas pelo plano de corte", "B) Linhas de centro", "C) Dimensões ocultas", "D) Trajeto MOVE", "E) Arestas invisíveis"], c: 0 },
+            { q: "28. O que indica principalmente uma linha de indicação de corte nomeada como A-A?", op: ["A) Uma linha de cota", "B) A posição do plano de corte e direção de observação", "C) Eixo de rotação", "D) Layer oculto", "E) Limite de impressão"], c: 1 },
+            { q: "29. Quando apenas uma região limitada da peça precisa ter seu interior revelado, qual representação usar?", op: ["A) Corte total", "B) Meio-corte", "C) Corte parcial", "D) Vista superior", "E) Perspectiva isométrica"], c: 2 },
+            { q: "30. Qual ambiente do AutoCAD é adequado para preparar e configurar a plotagem e impressão?", op: ["A) Model Space", "B) Layout / Paper Space", "C) Bloco dinâmico", "D) Render 3D", "E) Quick Calculator"], c: 1 },
+            // Questões práticas adicionais para dinamizar a turma
+            { q: "31. Qual atalho de teclado aciona o comando CIRCLE no AutoCAD?", op: ["A) L", "B) C", "C) REC", "D) PL", "E) TR"], c: 1 },
+            { q: "32. Para cancelar ou sair de qualquer comando ativo no AutoCAD, qual tecla deve ser pressionada?", op: ["A) Enter", "B) Spacebar", "C) Esc", "D) Tab", "E) F1"], c: 2 },
+            { q: "33. Qual comando estende uma linha até encontrar outra aresta limite?", op: ["A) TRIM", "B) EXTEND", "C) FILLET", "D) EXPLODE", "E) STRETCH"], c: 1 },
+            { q: "34. Para espelhar uma geometria simétrica rapidamente, qual comando escolhemos?", op: ["A) MIRROR", "B) COPY", "C) ARRAY", "D) ROTATE", "E) OFFSET"], c: 0 },
+            { q: "35. Qual o comando usado para criar cópias múltiplas em matriz (linhas e colunas ou circular)?", op: ["A) COPY", "B) OFFSET", "C) ARRAY", "D) MOVE", "E) SCALE"], c: 2 },
+            { q: "36. O que significa a sigla CAD em inglês aplicada aos softwares de projeto?", op: ["A) Computer Aided Design", "B) Creative Art Drawing", "C) Central Automated Data", "D) Component Assembly Diagram", "E) Complex Architecture Dimension"], c: 0 },
+            { q: "37. Qual comando é utilizado para alterar o tamanho (ampliar ou reduzir) de um objeto mantendo proporção?", op: ["A) STRETCH", "B) SCALE", "C) MOVE", "D) LENGTH", "E) TRIM"], c: 1 },
+            { q: "38. Para inserir chanfros nas esquinas de peças mecânicas, qual comando usamos?", op: ["A) FILLET", "B) CHAMFER", "C) TRIM", "D) JOIN", "E) BREAK"], c: 1 },
+            { q: "39. Qual ferramenta exibe a orientação espacial 3D em formato de cubo no canto da tela do AutoCAD?", op: ["A) ViewCube", "B) Navigation Bar", "C) Command Window", "D) Status Bar", "E) Ribbon"], c: 0 },
+            { q: "40. No teclado do AutoCAD, apertar 'Enter' ou 'Espaço' após digitar um comando tem qual função?", op: ["A) Apagar tudo", "B) Confirmar o comando", "C) Fechar o programa", "D) Mudar cor", "E) Salvar arquivo"], c: 1 }
+        ];
+
+        function adicionarAluno() {
+            const input = document.getElementById('input-nome');
+            const nome = input.value.trim();
+            if(!nome) return alert("Digite um nome válido!");
+            if(alunos.includes(nome)) return alert("Este nome já está na lista!");
+
+            alunos.push(nome);
+            input.value = '';
+            atualizarTelaInscricao();
+        }
+
+        function atualizarTelaInscricao() {
+            const lista = document.getElementById('lista-alunos');
+            const contador = document.getElementById('contador-alunos');
+            const btnIniciar = document.getElementById('btn-iniciar');
+
+            contador.textContent = alunos.length;
+            if(alunos.length === 0) {
+                lista.innerHTML = `<span class="text-slate-500 text-sm italic">Nenhum aluno inscrito ainda...</span>`;
+                btnIniciar.disabled = true;
+                btnIniciar.className = "w-full bg-slate-700 text-slate-400 font-bold py-3.5 rounded-xl cursor-not-allowed";
+                return;
+            }
+
+            lista.innerHTML = alunos.map((aluno, index) => `
+                <span class="bg-slate-800 border border-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2">
+                    ${aluno} 
+                    <button onclick="removerAluno(${index})" class="text-red-400 hover:text-red-300 font-bold cursor-pointer">&times;</button>
+                </span>
+            `).join('');
+
+            if(alunos.length >= 2) {
+                btnIniciar.disabled = false;
+                btnIniciar.className = "w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition duration-200 shadow-lg cursor-pointer";
+            } else {
+                btnIniciar.disabled = true;
+                btnIniciar.className = "w-full bg-slate-700 text-slate-400 font-bold py-3.5 rounded-xl cursor-not-allowed";
+            }
+        }
+
+        function removerAluno(index) {
+            alunos.splice(index, 1);
+            atualizarTelaInscricao();
+        }
+
+        function embaralhar(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function iniciarTorneio() {
+            if(alunos.length < 2) return alert("Adicione pelo menos 2 alunos!");
+            
+            let embaralhados = embaralhar([...alunos]);
+            if(embaralhados.length % 2 !== 0) {
+                embaralhados.push("Robô CAD 🤖");
+            }
+
+            chaveamentoAtual = [];
+            for(let i = 0; i < embaralhados.length; i += 2) {
+                chaveamentoAtual.push({ p1: embaralhados[i], p2: embaralhados[i+1] });
+            }
+
+            definirTextoFase();
+            mostrarTela('tela-chaveamento');
+            renderizarChaveamento();
+        }
+
+        function definirTextoFase() {
+            const total = chaveamentoAtual.length;
+            if(total > 4) faseAtualTexto = "Oitavas de Final";
+            else if(total > 2) faseAtualTexto = "Quartas de Final";
+            else if(total === 2) faseAtualTexto = "Semifinais";
+            else if(total === 1 && faseAtualTexto === "Semifinais") faseAtualTexto = "Grande Final";
+            
+            document.getElementById('status-fase').textContent = faseAtualTexto;
+        }
+
+        function renderizarChaveamento() {
+            const container = document.getElementById('container-confrontos');
+            container.innerHTML = chaveamentoAtual.map((duelo, idx) => `
+                <div class="bg-slate-900 border border-slate-700 p-4 rounded-xl flex justify-between items-center shadow-md">
+                    <span class="font-bold text-blue-400 w-1/3 text-right truncate">${duelo.p1}</span>
+                    <span class="text-xs uppercase bg-red-600/20 text-red-400 border border-red-500/30 px-3 py-1 rounded-full font-bold">Duelo ${idx + 1}</span>
+                    <span class="font-bold text-red-400 w-1/3 text-left truncate">${duelo.p2}</span>
+                </div>
+            `).join('');
+        }
+
+        function comecarDueloAtual() {
+            indiceDuelo = 0;
+            proximaChave = [];
+            carregarDuelo();
+            mostrarTela('tela-pergunta');
+        }
+
+        function carregarDuelo() {
+            const duelo = chaveamentoAtual[indiceDuelo];
+            document.getElementById('info-rodada-atual').textContent = faseAtualTexto;
+            document.getElementById('info-duelo-atual').textContent = `Duelo ${indiceDuelo + 1} de ${chaveamentoAtual.length}`;
+            document.getElementById('player-1').textContent = duelo.p1;
+            document.getElementById('player-2').textContent = duelo.p2;
+
+            document.getElementById('feedback-resposta').classList.add('hidden');
+            document.getElementById('btn-proxima').classList.add('hidden');
+
+            // Sorteia uma pergunta aleatória do banco de 40 questões
+            const qObj = bancoPerguntas[Math.floor(Math.random() * bancoPerguntas.length)];
+            document.getElementById('texto-pergunta').textContent = qObj.q;
+
+            const opContainer = document.getElementById('opcoes-container');
+            opContainer.innerHTML = qObj.op.map((opcao, i) => `
+                <button onclick="responderDuelo(${i}, ${qObj.c}, '${duelo.p1}', '${duelo.p2}')" 
+                    class="w-full text-left bg-slate-900 hover:bg-slate-700 border border-slate-700 p-3.5 rounded-xl text-sm font-medium transition duration-200 cursor-pointer">
+                    ${opcao}
+                </button>
+            `).join('');
+        }
+
+        function responderDuelo(escolhida, correta, p1, p2) {
+            let vencedor = (escolhida === correta) ? p1 : p2;
+            if(p2.includes("Robô")) vencedor = p1;
+
+            const feedback = document.getElementById('feedback-resposta');
+            feedback.classList.remove('hidden');
+            
+            if(escolhida === correta) {
+                feedback.className = "text-center p-3 rounded-xl font-semibold mb-4 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                feedback.textContent = `🎉 Resposta Correta! ${vencedor} venceu o confronto!`;
+            } else {
+                feedback.className = "text-center p-3 rounded-xl font-semibold mb-4 bg-red-500/20 text-red-400 border border-red-500/30";
+                feedback.textContent = `❌ Resposta Incorreta! O ponto vai para ${vencedor}!`;
+            }
+
+            proximaChave.push(vencedor);
+
+            const botoes = document.querySelectorAll('#opcoes-container button');
+            botoes.forEach(b => b.disabled = true);
+
+            document.getElementById('btn-proxima').classList.remove('hidden');
+        }
+
+        function proximoDuelo() {
+            indiceDuelo++;
+            if(indiceDuelo < chaveamentoAtual.length) {
+                carregarDuelo();
+            } else {
+                if(faseAtualTexto === "Semifinais") {
+                    chaveamentoAtual = [{ p1: proximaChave[0], p2: proximaChave[1] }];
+                    faseAtualTexto = "Grande Final";
+                    mostrarTela('tela-chaveamento');
+                    renderizarChaveamento();
+                } else if(faseAtualTexto === "Grande Final") {
+                    document.getElementById('podio-1').textContent = proximaChave[0];
+                    document.getElementById('podio-2').textContent = chaveamentoAtual[0].p1 === proximaChave[0] ? chaveamentoAtual[0].p2 : chaveamentoAtual[0].p1;
+                    document.getElementById('podio-3').textContent = "Destaque da Turma 🏅";
+                    mostrarTela('tela-podio');
+                } else {
+                    let novaRodada = [];
+                    for(let i = 0; i < proximaChave.length; i += 2) {
+                        if(proximaChave[i+1]) {
+                            novaRodada.push({ p1: proximaChave[i], p2: proximaChave[i+1] });
+                        } else {
+                            novaRodada.push({ p1: proximaChave[i], p2: "Avança Direto ⚡" });
+                        }
+                    }
+                    chaveamentoAtual = novaRodada;
+                    definirTextoFase();
+                    mostrarTela('tela-chaveamento');
+                    renderizarChaveamento();
+                }
+            }
+        }
+
+        function mostrarTela(idTela) {
+            ['tela-inscricao', 'tela-chaveamento', 'tela-pergunta', 'tela-podio'].forEach(t => {
+                document.getElementById(t).classList.add('hidden');
+            });
+            document.getElementById(idTela).classList.remove('hidden');
+        }
+
+        function reiniciarJogo() {
+            alunos = [];
+            atualizarTelaInscricao();
+            mostrarTela('tela-inscricao');
+        }
+    </script>
+</body>
+</html>

@@ -18,15 +18,35 @@ async function refresh(){state=await rpc('ac_state');$('message').textContent=''
  if(!state.registered){show('login');if(state.started)$('join-btn').disabled=true;return}
  const active=state.active;if(!active){show('waiting');$('waiting-text').textContent=state.started?'Aguardando classificação ou próxima rodada. Confira a árvore no projetor.':'Inscrição confirmada! Aguardando o professor iniciar.';return}
  show('quiz');renderQuiz();}
-function renderTeacher(){const players=state.players||[],matches=state.matches||[];
+function renderTeacher(){
+ const players=state.players||[],matches=state.matches||[];
  $('count').textContent=`${players.length} inscritos`;
  $('roster').innerHTML=players.map(p=>`<span class="chip">${esc(p.name)}</span>`).join('')||'Nenhum estudante inscrito.';
  $('start').disabled=state.started||players.length<4;
  $('start').textContent=state.started?'Campeonato em andamento':'Sortear confrontos e iniciar';
- const rounds=[...new Set(matches.filter(m=>!m.third).map(m=>m.round))];
- $('bracket').innerHTML=rounds.map((r,i)=>`<div class="round"><h3>${r===rounds.at(-1)?'🏆 Final':r===rounds.at(-2)?'Semifinais':`Rodada ${r}`}</h3>${matches.filter(m=>m.round===r&&!m.third).map(card).join('')}</div>`).join('')+(matches.some(m=>m.third)?`<div class="round"><h3>🥉 Terceiro lugar</h3>${matches.filter(m=>m.third).map(card).join('')}</div>`:'');
- const final=matches.find(m=>m.round===rounds.at(-1)&&!m.third),third=matches.find(m=>m.third);
- $('podium').innerHTML=final?.winner&&third?.winner?`🥇 ${esc(final.winner)} · 🥈 ${esc(final.winner===final.p1?final.p2:final.p1)} · 🥉 ${esc(third.winner)}`:'O pódio será definido após a final e a disputa pelo terceiro lugar.';
+ const standard=matches.filter(m=>!m.third),rounds=[...new Set(standard.map(m=>m.round))].sort((a,b)=>a-b);
+ const last=rounds.at(-1),final=standard.find(m=>m.round===last),third=matches.find(m=>m.third);
+ const pending=standard.filter(m=>m.p1&&m.p2&&!m.winner);
+ const current=pending.length?Math.min(...pending.map(m=>m.round)):null;
+ const labels=r=>r===last?'Final':r===last-1?'Semifinais':r===last-2?'Quartas de final':`Rodada ${r}`;
+ const banner=!state.started?`⏳ Aguardando o professor iniciar · ${players.length} participantes inscritos`:
+  final?.winner&&third?.winner?'🏆 CAMPEONATO ENCERRADO · Pódio definido!':
+  current!==null?`⚔ ${labels(current)} · ${pending.filter(m=>m.round===current).length} confronto(s) em andamento. Os classificados avançam automaticamente ao concluir as 10 perguntas.`:
+  '⏳ Aguardando classificação automática e formação da próxima rodada…';
+ $('stage-banner').textContent=banner;
+ const roundHtml=(r,side)=>`<div class="bracket-col"><h3>${labels(r)}</h3>${standard.filter(m=>m.round===r).filter(m=>side==='left'?m.slot%2===0:m.slot%2===1).map(card).join('')||'<div class="match">Aguardando classificados</div>'}</div>`;
+ if(!rounds.length){$('bracket').innerHTML='<div class="podium-pending">A árvore será exibida quando o professor iniciar o campeonato.</div>'}
+ else {
+  const early=rounds.slice(0,-1);
+  const left=early.map(r=>roundHtml(r,'left')).join('');
+  const right=early.slice().reverse().map(r=>roundHtml(r,'right')).join('');
+  $('bracket').innerHTML=`<div class="bracket-wing left">${left}</div><div class="bracket-center"><h3>🏆 GRANDE FINAL</h3>${final?card(final):'Aguardando final'}<h3>🥉 TERCEIRO LUGAR</h3>${third?card(third):'Aguardando semifinalistas'}</div><div class="bracket-wing right">${right}</div>`;
+ }
+ if(final?.winner&&third?.winner){
+  const runner=final.winner===final.p1?final.p2:final.p1;
+  const place=(rank,name,cup,cls)=>`<div class="podium-place ${cls}"><div class="podium-cup">${cup}</div><div class="podium-name">${esc(name)}</div><div class="podium-step">${rank}º</div></div>`;
+  $('podium').innerHTML=`<h3>🏆 PÓDIO DOS CAMPEÕES</h3><div class="podium-stands">${place(2,runner,'🥈','second')}${place(1,final.winner,'🏆','first')}${place(3,third.winner,'🥉','third')}</div>`;
+ } else $('podium').innerHTML='<h3>🏆 PÓDIO DOS CAMPEÕES</h3><div class="podium-pending">🥇 🥈 🥉<p>O pódio será revelado ao término da final e da disputa de terceiro lugar.</p></div>';
 }
 function card(m){let name=(p,w)=>`<div class="competitor ${m.winner===p&&p?'win':''}">${esc(p||'A definir')} ${m.winner===p&&p?'✓':''}</div>`;
  return `<div class="match"><small>${m.status==='empty'?'Sem participantes':m.status==='advanced'||m.status==='finished'?'Concluído':m.status==='bye'?'Classificação automática':m.done1&&m.done2?'Concluído':m.p1&&m.p2?'Em disputa':'Aguardando'}</small>${name(m.p1)}<div class="vs">${m.s1??'–'} × ${m.s2??'–'}</div>${name(m.p2)}</div>`}

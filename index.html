@@ -117,12 +117,14 @@
         const SUPABASE_KEY = 'sb_publishable_pl5_hDZ-ar6wMJAIVsfggw_svHxW3IZ';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        const isProfessor = window.location.search.includes('professor=true');
+        const urlParams = new URLSearchParams(window.location.search);
+        const isProfessor = urlParams.get('professor') === 'true';
         let meuNome = localStorage.getItem('autocad_aluno_nome') || '';
 
+        // Banco de Questões integrado[cite: 2, 3, 4]
         const bancoPerguntas = [
-            { q: "1. Qual comando é mais adequado para produzir uma transformação simétrica (reflexão) em relação a um eixo indicado?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) ROTATE", "E) MOVE"], c: 2 },
-            { q: "2. Qual comando permite gerar cópias paralelas mantendo uma distância definida?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) TRIM", "E) ROTATE"], c: 1 },
+            { q: "1. Qual comando é mais adequado para produzir uma transformação simétrica (reflexão) em relação a um eixo indicado?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) ROTATE", "E) MOVE"], c: 2 },[cite: 2]
+            { q: "2. Qual comando permite gerar cópias paralelas mantendo uma distância definida?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) TRIM", "E) ROTATE"], c: 1 },[cite: 2]
             { q: "3. Qual comando é utilizado para arredondar o encontro entre duas linhas, criando um raio definido?", op: ["A) TRIM", "B) FILLET", "C) CHAMFER", "D) OFFSET", "E) EXTEND"], c: 1 },
             { q: "4. Qual comando cria uma cópia de um objeto sem apagar o original?", op: ["A) MOVE", "B) COPY", "C) JOIN", "D) TRIM", "E) FILLET"], c: 1 },
             { q: "5. Qual comando deve ser utilizado para girar um objeto em torno de um ponto-base?", op: ["A) ROTATE", "B) MIRROR", "C) OFFSET", "D) MOVE", "E) EXTEND"], c: 0 },
@@ -316,4 +318,43 @@
             const { data: alunos } = await supabaseClient.from('participantes').select('*');
             if(!alunos || alunos.length < 2) return alert("É preciso pelo menos 2 alunos conectados!");
             
-            let nomes = alunos.map(a
+            let nomes = alunos.map(a => a.nome);
+            let embaralhados = embaralhar(nomes);
+            if(embaralhados.length % 2 !== 0) {
+                embaralhados.push("Robô CAD 🤖");
+            }
+
+            await supabaseClient.from('duelos').delete().neq('rodada', 'EXCLUIR_TUDO');
+
+            let confrontos = [];
+            for(let i = 0; i < embaralhados.length; i += 2) {
+                let p1 = embaralhados[i];
+                let p2 = embaralhados[i+1];
+
+                await supabaseClient.from('duelos').insert([{
+                    rodada: 'Oitavas de Final',
+                    aluno_1: p1,
+                    aluno_2: p2,
+                    pergunta_texto: 'Desafio 10 Questões',
+                    opcao_correta: 0,
+                    status: 'pendente'
+                }]);
+
+                confrontos.push({ p1, p2 });
+            }
+
+            document.getElementById('prof-area-chaveamento').classList.remove('hidden');
+            
+            document.getElementById('coluna-fase-1').innerHTML = confrontos.map((c, idx) => `
+                <div class="bg-slate-800 border border-slate-700 p-2.5 rounded-lg flex justify-between items-center text-xs shadow">
+                    <span class="font-bold text-blue-400 truncate w-5/12 text-right">${c.p1}</span>
+                    <span class="bg-red-600/20 text-red-400 px-2 py-0.5 rounded font-bold">VS</span>
+                    <span class="font-bold text-red-400 truncate w-5/12 text-left">${c.p2}</span>
+                </div>
+            `).join('');
+
+            alert("Torneio iniciado com sucesso!");
+        }
+    </script>
+</body>
+</html>

@@ -31,19 +31,22 @@ function renderTeacher(){
  if(final?.winner&&third?.winner)$('start').textContent='Campeonato encerrado';
  const pending=standard.filter(m=>m.p1&&m.p2&&!m.winner);
  const current=pending.length?Math.min(...pending.map(m=>m.round)):null;
- const labels=r=>r===last?'Final':r===last-1?'Semifinais':r===last-2?'Quartas de final':`Rodada ${r}`;
+ const labels=r=>r===last?'Final':r===last-1?'Semifinais':r===last-2?'Quartas de final':r===last-3?'Oitavas de final':r===last-4?'Fase de 32':`Rodada ${r}`;
  const banner=!state.started?`⏳ Aguardando o professor iniciar · ${players.length} participantes inscritos`:
   final?.winner&&third?.winner?'🏆 CAMPEONATO ENCERRADO · Pódio definido!':
   current!==null?`⚔ ${labels(current)} · ${pending.filter(m=>m.round===current).length} confronto(s) em andamento. Os classificados avançam automaticamente ao concluir as 10 perguntas.`:
   '⏳ Aguardando classificação automática e formação da próxima rodada…';
  $('stage-banner').textContent=banner;
- const roundHtml=(r,side)=>`<div class="bracket-col"><h3>${labels(r)}</h3>${standard.filter(m=>m.round===r).filter(m=>side==='left'?m.slot%2===0:m.slot%2===1).map(card).join('')||'<div class="match">Aguardando classificados</div>'}</div>`;
  if(!rounds.length){$('bracket').innerHTML='<div class="podium-pending">A árvore será exibida quando o professor iniciar o campeonato.</div>'}
  else {
-  const early=rounds.slice(0,-1);
-  const left=early.map(r=>roundHtml(r,'left')).join('');
-  const right=early.slice().reverse().map(r=>roundHtml(r,'right')).join('');
-  $('bracket').innerHTML=`<div class="bracket-wing left">${left}</div><div class="bracket-center"><h3>🏆 GRANDE FINAL</h3>${final?card(final):'Aguardando final'}<h3>🥉 TERCEIRO LUGAR</h3>${third?card(third):'Aguardando semifinalistas'}</div><div class="bracket-wing right">${right}</div>`;
+  const leaves=standard.filter(m=>m.round===rounds[0]).length;
+  const tree=rounds.slice().reverse().map(r=>{
+   const span=2**(r-rounds[0]);
+   const nodes=standard.filter(m=>m.round===r).sort((a,b)=>a.slot-b.slot).map(m=>
+    `<div class="tree-node ${r===last?'tree-final':''}" style="grid-column:${m.slot*span+1} / span ${span}"><div class="tree-card"><div class="match-number">${r===last?'🏆 Grande final':`Confronto ${m.slot+1}`}</div>${card(m)}</div></div>`).join('');
+   return `<section class="tree-round ${r===current?'current-round':''}"><h3>${labels(r)}${r===current?' · Em andamento':''}</h3><div class="tree-row" style="grid-template-columns:repeat(${leaves},minmax(170px,1fr))">${nodes}</div></section>`;
+  }).join('');
+  $('bracket').innerHTML=`<p class="tree-help">Leia de baixo para cima ↑ · Cada dupla de confrontos alimenta o confronto acima. Arraste para os lados para acompanhar toda a chave.</p><div class="tree-scroll"><div class="tree-canvas">${tree}</div></div><aside class="third-place"><h3>🥉 Disputa de terceiro lugar</h3><p class="muted">Entre os dois perdedores das semifinais</p>${third?card(third):'Aguardando semifinalistas'}</aside>`;
  }
  if(final?.winner&&third?.winner){
   const runner=final.winner===final.p1?final.p2:final.p1;
@@ -51,8 +54,8 @@ function renderTeacher(){
   $('podium').innerHTML=`<h3>🏆 PÓDIO DOS CAMPEÕES</h3><div class="podium-stands">${place(2,runner,'🥈','second')}${place(1,final.winner,'🏆','first')}${place(3,third.winner,'🥉','third')}</div>`;
  } else $('podium').innerHTML='<h3>🏆 PÓDIO DOS CAMPEÕES</h3><div class="podium-pending">🥇 🥈 🥉<p>O pódio será revelado ao término da final e da disputa de terceiro lugar.</p></div>';
 }
-function card(m){let name=(p,w)=>`<div class="competitor ${m.winner===p&&p?'win':''}">${esc(p||'A definir')} ${m.winner===p&&p?'✓':''}</div>`;
- return `<div class="match"><small>${m.status==='empty'?'Sem participantes':m.status==='advanced'||m.status==='finished'?'Concluído':m.status==='bye'?'Classificação automática':m.done1&&m.done2?'Concluído':m.p1&&m.p2?'Em disputa':'Aguardando'}</small>${name(m.p1)}<div class="vs">${m.s1??'–'} × ${m.s2??'–'}</div>${name(m.p2)}</div>`}
+function card(m){const bye=!!m.winner&&(!m.p1||!m.p2);const name=(p,score)=>`<div class="competitor ${m.winner===p&&p?'win':''}"><span>${esc(p||(bye?'Sem adversário':'A definir'))}</span><strong>${p?(score??'–'):''}${m.winner===p&&p?' ✓':''}</strong></div>`;
+ return `<div class="match ${bye?'automatic':''}"><small>${m.status==='empty'?'Sem participantes':bye?'Classificação automática':m.winner?'Concluído':m.p1&&m.p2?'Em disputa':'Aguardando classificados'}</small>${name(m.p1,m.s1)}${name(m.p2,m.s2)}</div>`}
 function renderQuiz(){const a=state.active,qs=state.questions||[],answered=state.answers||[];const next=qs.find(q=>!answered.some(x=>x.id===q.id));
  $('duel').textContent=`Rodada ${a.round} · ${esc(state.matches.find(m=>m.id===a.id)?.p1||'')} × ${esc(state.matches.find(m=>m.id===a.id)?.p2||'')}`;
  $('progress').textContent=`${answered.length} / 10 respondidas · ${answered.filter(x=>x.correct).length} acertos`;

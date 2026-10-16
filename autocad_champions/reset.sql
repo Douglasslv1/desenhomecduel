@@ -27,10 +27,10 @@ begin
   'questions',(select coalesce(jsonb_agg(to_jsonb(q)),'[]'::jsonb) from public.ac_questions q),
   'settings',(select to_jsonb(s) from public.ac_settings s where id=1)
  )) returning id into v_archive;
- delete from public.ac_answers;
- delete from public.ac_matches;
- delete from public.ac_players;
- delete from public.ac_meta;
+ delete from public.ac_answers where match_id is not null;
+ delete from public.ac_matches where id is not null;
+ delete from public.ac_players where id is not null;
+ delete from public.ac_meta where id is not null;
  update public.ac_settings set started=false,created_at=now() where id=1;
  return v_archive;
 end $$;

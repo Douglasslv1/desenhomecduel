@@ -31,3 +31,11 @@
 - As respostas são verificadas pelo servidor, mas não há cronômetro obrigatório nem sistema anti-cola/proctoring.
 - Para atualizar uma instalação existente, execute `reset.sql` no SQL Editor e publique novamente `index.html` e `app.js`. O botão “Arquivar e abrir nova edição” estará disponível no painel do professor após o início. Os arquivos em `ac_archives` só podem ser consultados pelo administrador do banco; não há tela de histórico ou restauração nesta versão.
 - Recomendado configurar CAPTCHA/rate limits de login anônimo e testar a capacidade de conexões para a quantidade de alunos.
+
+## Árvore ascendente e teste com 26 participantes
+- Execute `bracket-26.sql` para atualizar o sorteio antes de iniciar uma nova edição. Não modifica a chave de uma edição já iniciada.
+- Publique `index.html` e `app.js` para exibir a final no topo e as fases anteriores abaixo. O terceiro lugar fica separado.
+- `preview-26.html` é uma prévia local com resultados simulados, sem conexão com o banco.
+- Validação local: `node test-bracket.cjs` simula a distribuição e progressão de 4 a 64 participantes. Não substitui a validação das funções SQL no Supabase.
+- Para 26 participantes: 6 avanços automáticos na fase de 32; 10 duelos iniciais, 8 nas oitavas, 4 nas quartas, 2 nas semifinais, final e terceiro lugar. Total de 26 duelos e 520 respostas.
+- Teste na instância: após o professor arquivar a edição anterior, `node test-eight.cjs register 26` cadastra as sessões. Depois do sorteio pelo professor, `node test-eight.cjs play 26` executa as respostas. As sessões ficam apenas no diretório temporário local; não publique arquivos de sessão.

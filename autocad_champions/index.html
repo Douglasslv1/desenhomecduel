@@ -14,6 +14,22 @@ header{background:#280414;border-color:#92294a}header strong span{color:#ffce65}
 .bracket-wing.left .bracket-col:not(:last-child) .match:after{content:'';position:absolute;right:-12px;top:50%;width:12px;border-top:2px solid #ed6890}.bracket-wing.right .bracket-col:not(:last-child) .match:after{content:'';position:absolute;left:-12px;top:50%;width:12px;border-top:2px solid #ed6890}
 .podium{margin:20px 0 26px;padding:24px 12px;background:radial-gradient(ellipse at top,#851338,#300516);border:1px solid #d0637c;border-radius:20px;color:#fff}.podium h3{text-align:center;color:#ffdc8c}.podium-stands{display:flex;justify-content:center;align-items:flex-end;gap:clamp(8px,2vw,30px);min-height:270px}.podium-place{flex:1;max-width:230px;text-align:center;display:flex;flex-direction:column;align-items:center}.podium-cup{font-size:clamp(32px,5vw,65px)}.podium-name{font-weight:800;margin:7px 0 12px;overflow-wrap:anywhere}.podium-step{width:100%;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:clamp(24px,4vw,46px);box-shadow:0 -5px 25px #0003}.podium-place.first .podium-step{height:150px;background:linear-gradient(#ffd36b,#ac6c13);color:#50260a}.podium-place.second .podium-step{height:105px;background:linear-gradient(#eaf0f5,#8692a1);color:#303c4d}.podium-place.third .podium-step{height:75px;background:linear-gradient(#f6ad67,#a7552a);color:#54230e}.podium-pending{text-align:center;color:#eac3ce;padding:30px}
 @media(max-width:1050px){.bracket{display:flex;flex-direction:column;align-items:stretch}.bracket-wing{width:100%;overflow-x:auto}.bracket-wing.right{flex-direction:row}.bracket-center{width:100%;max-width:420px;margin:auto}.bracket-col{min-width:160px}}
+/* Árvore ascendente: cada card fica centralizado sobre seus dois alimentadores. */
+.bracket{display:block;min-height:0;padding:22px 0;background:#270414;overflow:visible}
+.tree-help{margin:0 20px 24px;color:#e2b6c7;font-size:13px;text-align:center}
+.tree-scroll{overflow-x:auto;padding:0 20px 24px;overscroll-behavior-x:contain}
+.tree-canvas{width:max-content;min-width:100%}
+.tree-round{margin:0 0 20px}.tree-round>h3{position:sticky;left:0;width:260px;margin:0 0 12px;padding:8px 12px;border-left:3px solid #a04765;font-size:14px;color:#f9bfcf}
+.current-round>h3{color:#ffd067;border-color:#ffd067}
+.tree-row{display:grid;gap:0;align-items:start}
+.tree-node{display:flex;justify-content:center;position:relative;padding:0 9px 36px}
+.tree-card{width:170px;max-width:100%;position:relative}
+.match-number{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#e2b6c7;text-align:center;margin:0 0 7px}
+.tree-node:nth-child(odd):not(.tree-final):before{content:'';position:absolute;left:50%;width:100%;top:-30px;border-top:2px solid #a04765}
+.tree-node:not(.tree-final):after{content:'';position:absolute;left:50%;top:-30px;height:24px;border-left:2px solid #a04765}
+.tree-final .match{border:2px solid #ffd067;box-shadow:0 0 24px #ffce6522}.tree-final .match-number{color:#ffd067;font-weight:800}
+.competitor{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:42px;font-size:12px}.competitor span{overflow-wrap:anywhere;min-width:0}.competitor strong{white-space:nowrap;font-size:13px}.match small{display:block;margin-bottom:6px;min-height:15px}.automatic{border-style:dashed}.automatic .competitor:not(.win){color:#8b4961;font-size:11px}
+.third-place{max-width:360px;margin:0 auto;padding:20px;border:1px solid #a04765;border-radius:14px;background:#3b071b}.third-place h3{color:#ffd067;font-size:16px}.third-place p{font-size:12px}
 </style></head><body><header><strong>⚙️ AutoCAD <span>CHAMPIONS</span></strong><div class="tag">DESENHO MECÂNICO DIGITAL</div></header><main><div id="message" role="alert"></div>
 <section id="login" class="panel narrow" hidden><h2>Entre na arena</h2><p class="muted">Informe seu nome para participar do sorteio dos confrontos.</p><form id="join"><input id="name" maxlength="50" minlength="2" required placeholder="Seu nome"><button id="join-btn" type="submit">Entrar no campeonato →</button></form></section>
 <section id="waiting" class="panel narrow" hidden><h2>⏳ Sala de espera</h2><p id="waiting-text" class="muted"></p></section>

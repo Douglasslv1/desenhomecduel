@@ -121,10 +121,9 @@
         const isProfessor = urlParams.get('professor') === 'true';
         let meuNome = localStorage.getItem('autocad_aluno_nome') || '';
 
-        // Banco de Questões integrado[cite: 2, 3, 4]
         const bancoPerguntas = [
-            { q: "1. Qual comando é mais adequado para produzir uma transformação simétrica (reflexão) em relação a um eixo indicado?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) ROTATE", "E) MOVE"], c: 2 },[cite: 2]
-            { q: "2. Qual comando permite gerar cópias paralelas mantendo uma distância definida?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) TRIM", "E) ROTATE"], c: 1 },[cite: 2]
+            { q: "1. Qual comando é mais adequado para produzir uma transformação simétrica (reflexão) em relação a um eixo indicado?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) ROTATE", "E) MOVE"], c: 2 },
+            { q: "2. Qual comando permite gerar cópias paralelas mantendo uma distância definida?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) TRIM", "E) ROTATE"], c: 1 },
             { q: "3. Qual comando é utilizado para arredondar o encontro entre duas linhas, criando um raio definido?", op: ["A) TRIM", "B) FILLET", "C) CHAMFER", "D) OFFSET", "E) EXTEND"], c: 1 },
             { q: "4. Qual comando cria uma cópia de um objeto sem apagar o original?", op: ["A) MOVE", "B) COPY", "C) JOIN", "D) TRIM", "E) FILLET"], c: 1 },
             { q: "5. Qual comando deve ser utilizado para girar um objeto em torno de um ponto-base?", op: ["A) ROTATE", "B) MIRROR", "C) OFFSET", "D) MOVE", "E) EXTEND"], c: 0 },
@@ -169,7 +168,7 @@
         let indiceQuestaoAtual = 0;
         let meusAcertos = 0;
 
-        window.onload = async () => {
+        window.addEventListener('DOMContentLoaded', () => {
             if (isProfessor) {
                 document.getElementById('painel-badge').textContent = "Painel do Professor (Projetor)";
                 document.getElementById('painel-badge').className = "text-sm bg-red-600 px-4 py-1.5 rounded-full text-white font-semibold";
@@ -183,7 +182,7 @@
                 document.getElementById('aluno-status-msg').textContent = `Conectado como: ${meuNome}. Aguardando o professor...`;
                 inscreverRealtimeAluno();
             }
-        };
+        });
 
         async function alunoEntrar() {
             const input = document.getElementById('aluno-nome-input');

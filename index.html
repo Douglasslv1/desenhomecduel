@@ -38,4 +38,282 @@
             <div class="animate-pulse text-red-400 text-5xl mb-4">⏳</div>
             <h2 class="text-2xl font-bold mb-2 text-white">Você está na Sala!</h2>
             <p class="text-slate-400 text-sm mb-6">Prepare-se! Cada duelo terá uma série de 10 perguntas técnicas.</p>
-            <div id="aluno-status-msg" class="bg-slate-900 p
+            <div id="aluno-status-msg" class="bg-slate-900 p-4 rounded-xl border border-slate-700 text-slate-300 font-semibold">
+                Aguardando o professor iniciar o torneio...
+            </div>
+        </section>
+
+        <!-- TELA DO ALUNO: ARENA DE PERGUNTAS (10 QUESTÕES) -->
+        <section id="view-aluno-duelo" class="w-full max-w-lg bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700 hidden">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
+                <span id="aluno-fase-txt" class="text-red-400 font-bold text-sm uppercase">Duelo Ativo</span>
+                <span id="aluno-progresso-txt" class="text-slate-400 text-xs font-semibold">Questão 1 de 10</span>
+            </div>
+            
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 mb-4 text-center">
+                <div id="aluno-confronto-txt" class="text-sm font-bold text-white">Adversário: --</div>
+                <div class="text-xs text-emerald-400 mt-1">Seus Acertos: <span id="aluno-placar-parcial">0</span></div>
+            </div>
+
+            <h3 id="aluno-pergunta-txt" class="text-sm font-semibold mb-5 text-white leading-relaxed">Carregando pergunta...</h3>
+            
+            <div id="aluno-opcoes-container" class="grid grid-cols-1 gap-2 mb-4"></div>
+            
+            <div id="aluno-feedback" class="hidden text-center p-2.5 rounded-xl font-semibold text-sm"></div>
+        </section>
+
+        <!-- TELA DO PROFESSOR: PAINEL DE CONTROLE E ÁRVORE DE CHAVEAMENTO -->
+        <section id="view-professor" class="w-full max-w-5xl bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700 hidden">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+                <h2 class="text-2xl font-bold text-red-400">Painel de Controle do Professor</h2>
+                <span id="prof-contador" class="bg-slate-900 px-4 py-1.5 rounded-xl border border-slate-700 text-sm font-bold text-slate-300">0 Alunos Conectados</span>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-sm font-semibold text-slate-400 mb-2">Alunos na Sala de Espera:</h3>
+                <div id="prof-lista-alunos" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-3 bg-slate-900 rounded-xl border border-slate-800 min-h-[50px]">
+                    <span class="text-slate-500 text-sm italic">Nenhum aluno conectado ainda...</span>
+                </div>
+            </div>
+
+            <!-- ÁRVORE DE TORNEIO (ESTILO FUTEBOL / MATA-MATA) -->
+            <div id="prof-area-chaveamento" class="mb-6 hidden">
+                <h3 class="text-sm font-semibold text-red-400 mb-3 flex items-center gap-2">
+                    🌳 Árvore de Torneio (Mata-Mata ao Vivo)
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-900 p-5 rounded-xl border border-slate-700">
+                    <div class="space-y-3">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center mb-2">Fase Inicial (Confrontos)</div>
+                        <div id="coluna-fase-1" class="space-y-2"></div>
+                    </div>
+                    <div class="space-y-3 flex flex-col justify-around">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center mb-2">Semifinais ⚔️</div>
+                        <div id="coluna-fase-semi" class="space-y-4">
+                            <div class="bg-slate-800 border border-dashed border-slate-600 p-3 rounded-lg text-center text-xs text-slate-400 italic">Aguardando vencedores...</div>
+                        </div>
+                    </div>
+                    <div class="space-y-3 flex flex-col justify-center">
+                        <div class="text-xs font-bold text-yellow-400 uppercase tracking-wider text-center mb-2">🏆 Grande Final & Pódio</div>
+                        <div id="coluna-fase-final" class="space-y-3">
+                            <div class="bg-slate-800 border border-dashed border-yellow-600/50 p-3 rounded-lg text-center text-xs text-yellow-400/70 italic">🥇 Pódio em disputa</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-gerar-chaves" onclick="profIniciarTorneio()" class="w-full bg-emerald-600 hover:bg-emerald-700 font-bold py-3.5 rounded-xl transition shadow-lg text-lg cursor-pointer">
+                Gerar Chaveamento e Iniciar Torneio ⚡
+            </button>
+        </section>
+
+    </main>
+
+    <footer class="text-center py-4 text-xs text-slate-500">
+        Desenho Mecânico Digital — Sincronizado via Supabase Realtime
+    </footer>
+
+    <script>
+        const SUPABASE_URL = 'https://neiohdvunvmgqznmyviz.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_pl5_hDZ-ar6wMJAIVsfggw_svHxW3IZ';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const isProfessor = window.location.search.includes('professor=true');
+        let meuNome = localStorage.getItem('autocad_aluno_nome') || '';
+
+        const bancoPerguntas = [
+            { q: "1. Qual comando é mais adequado para produzir uma transformação simétrica (reflexão) em relação a um eixo indicado?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) ROTATE", "E) MOVE"], c: 2 },
+            { q: "2. Qual comando permite gerar cópias paralelas mantendo uma distância definida?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) TRIM", "E) ROTATE"], c: 1 },
+            { q: "3. Qual comando é utilizado para arredondar o encontro entre duas linhas, criando um raio definido?", op: ["A) TRIM", "B) FILLET", "C) CHAMFER", "D) OFFSET", "E) EXTEND"], c: 1 },
+            { q: "4. Qual comando cria uma cópia de um objeto sem apagar o original?", op: ["A) MOVE", "B) COPY", "C) JOIN", "D) TRIM", "E) FILLET"], c: 1 },
+            { q: "5. Qual comando deve ser utilizado para girar um objeto em torno de um ponto-base?", op: ["A) ROTATE", "B) MIRROR", "C) OFFSET", "D) MOVE", "E) EXTEND"], c: 0 },
+            { q: "6. Quando várias linhas formam um contorno e se deseja uni-las em um único objeto, qual comando utilizar?", op: ["A) JOIN", "B) EXPLODE", "C) TRIM", "D) OFFSET", "E) MOVE"], c: 0 },
+            { q: "7. No AutoCAD, qual comando desloca um objeto de uma posição para outra sem criar cópia?", op: ["A) COPY", "B) MOVE", "C) MIRROR", "D) ROTATE", "E) OFFSET"], c: 1 },
+            { q: "8. Qual comando remove o trecho excedente de uma linha utilizando outro objeto como limite?", op: ["A) EXTEND", "B) TRIM", "C) FILLET", "D) JOIN", "E) OFFSET"], c: 1 },
+            { q: "9. Qual comando é mais indicado para desenhar vários segmentos conectados que se comportam como um único objeto?", op: ["A) LINE", "B) POLYLINE", "C) RECTANGLE", "D) ARC", "E) MOVE"], c: 1 },
+            { q: "10. Qual comando permite criar rapidamente um contorno retangular informando dois cantos opostos?", op: ["A) CIRCLE", "B) POLYLINE", "C) RECTANGLE", "D) OFFSET", "E) TRIM"], c: 2 },
+            { q: "11. Para selecionar exatamente o ponto indicado no centro de um segmento, qual OSNAP deve ser utilizado?", op: ["A) Endpoint", "B) Midpoint", "C) Center", "D) Intersection", "E) Quadrant"], c: 1 },
+            { q: "12. Para selecionar exatamente o centro geométrico de um círculo, qual opção do OSNAP deve ser usada?", op: ["A) Endpoint", "B) Center", "C) Midpoint", "D) Nearest", "E) Intersection"], c: 1 },
+            { q: "13. Qual é a principal finalidade do OSNAP durante a construção de um desenho técnico?", op: ["A) Alterar cores", "B) Localizar pontos geométricos com precisão", "C) Criar Layers automaticamente", "D) Configurar impressão", "E) Definir escala"], c: 1 },
+            { q: "14. Qual organização de Layers é mais adequada para um desenho mecânico?", op: ["A) Um único Layer para tudo", "B) Separar contornos, eixos, cotas e outros elementos", "C) Um Layer para cada linha", "D) Usar apenas Layer 0", "E) Criar Layers na impressão"], c: 1 },
+            { q: "15. Ao desligar temporariamente um Layer, o que ocorre com os objetos pertencentes a ele?", op: ["A) São apagados", "B) Ficam temporariamente invisíveis", "C) Mudam para Layer 0", "D) São bloqueados", "E) Viram tracejados"], c: 1 },
+            { q: "16. Em representação ortogonal básica, quais são as três vistas ortogonais mais utilizadas?", op: ["A) Frontal, superior e lateral", "B) Frontal, perspectiva e isométrica", "C) Superior, inferior e perspectiva", "D) Lateral, isométrica e diagonal", "E) Frontal, diagonal e inferior"], c: 0 },
+            { q: "17. Ao observar a vista superior de uma peça, quais dimensões são representadas principalmente?", op: ["A) Altura e largura", "B) Altura e profundidade", "C) Largura e profundidade", "D) Somente altura", "E) Somente profundidade"], c: 2 },
+            { q: "18. Como é escolhida preferencialmente a vista frontal de uma peça?", op: ["A) Menor número de detalhes", "B) Posição mais característica e informativa", "C) Face de menor dimensão", "D) Pelo tamanho da folha", "E) Eliminar demais vistas"], c: 1 },
+            { q: "19. Uma aresta não visível diretamente em determinada vista pode ser representada por qual linha?", op: ["A) Linha contínua grossa", "B) Linha tracejada", "C) Linha de cota", "D) Linha de hachura", "E) Linha de chamada"], c: 1 },
+            { q: "20. O que significa a indicação aplicada a um furo com o símbolo Ø20?", op: ["A) Raio de 20 mm", "B) Diâmetro de 20 mm", "C) Profundidade de 20 mm", "D) Distância ao centro", "E) Espessura de 20 mm"], c: 1 },
+            { q: "21. Qual é a principal função das cotas em um desenho mecânico?", op: ["A) Decorar o desenho", "B) Indicar dimensões necessárias à interpretação/fabricação", "C) Substituir contornos", "D) Definir Layers", "E) Transformar em 3D"], c: 1 },
+            { q: "22. Qual é o principal problema técnico de cotar a mesma dimensão desnecessariamente mais de uma vez?", op: ["A) Falta de Layer", "B) Redundância e risco de confusão na fabricação", "C) Ausência de contorno", "D) Erro de escala", "E) Falta de perspectiva"], c: 1 },
+            { q: "23. Uma peça foi desenhada em tamanho real (1:1) e precisa ser impressa menor. Qual o procedimento adequado?", op: ["A) Redesenhar menor", "B) Alterar todas as cotas", "C) Aplicar escala adequada na viewport/impressão", "D) Usar TRIM", "E) Usar MOVE"], c: 2 },
+            { q: "24. Para representar uma redução de 200 mm reais para 50 mm impressos, qual escala corresponde?", op: ["A) 1:1", "B) 1:2", "C) 1:3", "D) 1:4", "E) 4:1"], c: 3 },
+            { q: "25. Qual formato de folha comum é frequentemente adequado para desenho técnico de peças simples e pequenas?", op: ["A) A0", "B) A1", "C) A2", "D) A3", "E) A4"], c: 4 },
+            { q: "26. Qual é a principal finalidade de representar uma peça em corte?", op: ["A) Mostrar detalhes internos pouco visíveis externamente", "B) Reduzir escala", "C) Eliminar cotas", "D) Substituir todas as vistas", "E) Criar perspectiva"], c: 0 },
+            { q: "27. O que representam normalmente as linhas inclinadas de hachura em uma vista em corte?", op: ["A) Superfícies do material atingidas pelo plano de corte", "B) Linhas de centro", "C) Dimensões ocultas", "D) Trajeto MOVE", "E) Arestas invisíveis"], c: 0 },
+            { q: "28. O que indica principalmente uma linha de indicação de corte nomeada como A-A?", op: ["A) Uma linha de cota", "B) A posição do plano de corte e direção de observação", "C) Eixo de rotação", "D) Layer oculto", "E) Limite de impressão"], c: 1 },
+            { q: "29. Quando apenas uma região limitada da peça precisa ter seu interior revelado, qual representação usar?", op: ["A) Corte total", "B) Meio-corte", "C) Corte parcial", "D) Vista superior", "E) Perspectiva isométrica"], c: 2 },
+            { q: "30. Qual ambiente do AutoCAD é adequado para preparar e configurar a plotagem e impressão?", op: ["A) Model Space", "B) Layout / Paper Space", "C) Bloco dinâmico", "D) Render 3D", "E) Quick Calculator"], c: 1 },
+            { q: "31. Qual atalho de teclado aciona o comando CIRCLE no AutoCAD?", op: ["A) L", "B) C", "C) REC", "D) PL", "E) TR"], c: 1 },
+            { q: "32. Para cancelar ou sair de qualquer comando ativo no AutoCAD, qual tecla deve ser pressionada?", op: ["A) Enter", "B) Spacebar", "C) Esc", "D) Tab", "E) F1"], c: 2 },
+            { q: "33. Qual comando estende uma linha até encontrar outra aresta limite?", op: ["A) TRIM", "B) EXTEND", "C) FILLET", "D) EXPLODE", "E) STRETCH"], c: 1 },
+            { q: "34. Para espelhar uma geometria simétrica rapidamente, qual comando escolhemos?", op: ["A) MIRROR", "B) COPY", "C) ARRAY", "D) ROTATE", "E) OFFSET"], c: 0 },
+            { q: "35. Qual o comando usado para criar cópias múltiplas em matriz (linhas e colunas ou circular)?", op: ["A) COPY", "B) OFFSET", "C) ARRAY", "D) MOVE", "E) SCALE"], c: 2 },
+            { q: "36. O que significa a sigla CAD em inglês aplicada aos softwares de projeto?", op: ["A) Computer Aided Design", "B) Creative Art Drawing", "C) Central Automated Data", "D) Component Assembly Diagram", "E) Complex Architecture Dimension"], c: 0 },
+            { q: "37. Qual comando é utilizado para alterar o tamanho (ampliar ou reduzir) de um objeto mantendo proporção?", op: ["A) STRETCH", "B) SCALE", "C) MOVE", "D) LENGTH", "E) TRIM"], c: 1 },
+            { q: "38. Para inserir chanfros nas esquinas de peças mecânicas, qual comando usamos?", op: ["A) FILLET", "B) CHAMFER", "C) TRIM", "D) JOIN", "E) BREAK"], c: 1 },
+            { q: "39. Qual ferramenta exibe a orientação espacial 3D em formato de cubo no canto da tela do AutoCAD?", op: ["A) ViewCube", "B) Navigation Bar", "C) Command Window", "D) Status Bar", "E) Ribbon"], c: 0 },
+            { q: "40. No teclado do AutoCAD, apertar 'Enter' ou 'Espaço' após digitar um comando tem qual função?", op: ["A) Apagar tudo", "B) Confirmar o comando", "C) Fechar o programa", "D) Mudar cor", "E) Salvar arquivo"], c: 1 }
+        ];
+
+        let minhas10Perguntas = [];
+        let indiceQuestaoAtual = 0;
+        let meusAcertos = 0;
+
+        window.onload = async () => {
+            if (isProfessor) {
+                document.getElementById('painel-badge').textContent = "Painel do Professor (Projetor)";
+                document.getElementById('painel-badge').className = "text-sm bg-red-600 px-4 py-1.5 rounded-full text-white font-semibold";
+                document.getElementById('view-professor').classList.remove('hidden');
+                document.getElementById('view-aluno-login').classList.add('hidden');
+                carregarAlunosProfessor();
+                inscreverRealtimeProfessor();
+            } else if (meuNome) {
+                document.getElementById('view-aluno-login').classList.add('hidden');
+                document.getElementById('view-aluno-espera').classList.remove('hidden');
+                document.getElementById('aluno-status-msg').textContent = `Conectado como: ${meuNome}. Aguardando o professor...`;
+                inscreverRealtimeAluno();
+            }
+        };
+
+        async function alunoEntrar() {
+            const input = document.getElementById('aluno-nome-input');
+            meuNome = input.value.trim();
+            if(!meuNome) return alert("Digite seu nome!");
+
+            localStorage.setItem('autocad_aluno_nome', meuNome);
+
+            const { error } = await supabaseClient.from('participantes').insert([{ nome: meuNome, status: 'aguardando' }]);
+            if(error) return alert("Erro ao entrar: " + error.message);
+
+            document.getElementById('view-aluno-login').classList.add('hidden');
+            document.getElementById('view-aluno-espera').classList.remove('hidden');
+            document.getElementById('aluno-status-msg').textContent = `Conectado como: ${meuNome}. Aguardando o professor...`;
+            inscreverRealtimeAluno();
+        }
+
+        async function carregarAlunosProfessor() {
+            const { data } = await supabaseClient.from('participantes').select('*');
+            if(data) atualizarListaProfessor(data);
+        }
+
+        function atualizarListaProfessor(alunos) {
+            const lista = document.getElementById('prof-lista-alunos');
+            const contador = document.getElementById('prof-contador');
+            contador.textContent = `${alunos.length} Alunos Conectados`;
+
+            if(alunos.length === 0) {
+                lista.innerHTML = `<span class="text-slate-500 text-sm italic">Nenhum aluno conectado ainda...</span>`;
+                return;
+            }
+
+            lista.innerHTML = alunos.map(a => `
+                <span class="bg-slate-800 border border-slate-700 text-slate-200 px-3.5 py-1.5 rounded-lg text-sm font-medium">
+                    🟢 ${a.nome}
+                </span>
+            `).join('');
+        }
+
+        function inscreverRealtimeProfessor() {
+            supabaseClient
+                .channel('room_profs')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'participantes' }, () => {
+                    carregarAlunosProfessor();
+                })
+                .subscribe();
+        }
+
+        function inscreverRealtimeAluno() {
+            supabaseClient
+                .channel('room_alunos_' + meuNome)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'duelos' }, payload => {
+                    const duelo = payload.new;
+                    if(duelo.aluno_1 === meuNome || duelo.aluno_2 === meuNome) {
+                        iniciarDesafio10Perguntas(duelo);
+                    }
+                })
+                .subscribe();
+        }
+
+        function iniciarDesafio10Perguntas(duelo) {
+            document.getElementById('view-aluno-espera').classList.add('hidden');
+            document.getElementById('view-aluno-duelo').classList.remove('hidden');
+            
+            let adversario = duelo.aluno_1 === meuNome ? duelo.aluno_2 : duelo.aluno_1;
+            document.getElementById('aluno-fase-txt').textContent = `Fase: ${duelo.rodada}`;
+            document.getElementById('aluno-confronto-txt').textContent = `Adversário: ${adversario}`;
+
+            let copiaBanco = [...bancoPerguntas].sort(() => Math.random() - 0.5);
+            minhas10Perguntas = copiaBanco.slice(0, 10);
+            indiceQuestaoAtual = 0;
+            meusAcertos = 0;
+            document.getElementById('aluno-placar-parcial').textContent = meusAcertos;
+
+            mostrarQuestaoAtual();
+        }
+
+        function mostrarQuestaoAtual() {
+            if(indiceQuestaoAtual >= 10) {
+                document.getElementById('aluno-pergunta-txt').textContent = "🏁 Fim do seu desafio! Você concluiu as 10 perguntas.";
+                document.getElementById('aluno-opcoes-container').innerHTML = `
+                    <div class="bg-slate-900 p-4 rounded-xl text-center text-emerald-400 font-bold text-base">
+                        Total de acertos: ${meusAcertos} de 10. Aguardando o resultado na árvore da turma!
+                    </div>
+                `;
+                document.getElementById('aluno-feedback').classList.add('hidden');
+                return;
+            }
+
+            let q = minhas10Perguntas[indiceQuestaoAtual];
+            document.getElementById('aluno-progresso-txt').textContent = `Questão ${indiceQuestaoAtual + 1} de 10`;
+            document.getElementById('aluno-pergunta-txt').textContent = q.q;
+            document.getElementById('aluno-feedback').classList.add('hidden');
+
+            const opContainer = document.getElementById('aluno-opcoes-container');
+            opContainer.innerHTML = q.op.map((opcao, i) => `
+                <button onclick="responderQuestao(${i}, ${q.c})" 
+                    class="w-full text-left bg-slate-900 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs font-medium transition duration-200 cursor-pointer">
+                    ${opcao}
+                </button>
+            `).join('');
+        }
+
+        function responderQuestao(escolhida, correta) {
+            const feedback = document.getElementById('aluno-feedback');
+            feedback.classList.remove('hidden');
+
+            const botoes = document.querySelectorAll('#aluno-opcoes-container button');
+            botoes.forEach(b => b.disabled = true);
+
+            if(escolhida === correta) {
+                meusAcertos++;
+                document.getElementById('aluno-placar-parcial').textContent = meusAcertos;
+                feedback.className = "text-center p-2.5 rounded-xl font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-sm";
+                feedback.textContent = "🎉 Correto!";
+            } else {
+                feedback.className = "text-center p-2.5 rounded-xl font-semibold bg-red-500/20 text-red-400 border border-red-500/30 text-sm";
+                feedback.textContent = "❌ Incorreto!";
+            }
+
+            setTimeout(() => {
+                indiceQuestaoAtual++;
+                mostrarQuestaoAtual();
+            }, 1200);
+        }
+
+        function embaralhar(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        async function profIniciarTorneio() {
+            const { data: alunos } = await supabaseClient.from('participantes').select('*');
+            if(!alunos || alunos.length < 2) return alert("É preciso pelo menos 2 alunos conectados!");
+            
+            let nomes = alunos.map(a

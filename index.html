@@ -9,14 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>body { font-family: 'Poppins', sans-serif; }</style>
 </head>
-<script>
-    // As credenciais vão direto aqui dentro do arquivo index.html
-    const SUPABASE_URL = 'https://neiohdvunvmgqznmyviz.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_pl5_hDZ-ar6wMJAIVsfggw_svHxW3IZ';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
-    // ... resto do código do jogo ...
-</script>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
 
     <header class="bg-slate-800 border-b border-slate-700 py-4 px-8 shadow-md flex justify-between items-center">
@@ -76,21 +68,13 @@
     </footer>
 
     <script>
-        // CONFIGURACAO DO SUPABASE (Insira seus dados aqui)
-        const SUPABASE_URL = 'SUA_URL_DO_SUPABASE_AQUI';
-        const SUPABASE_KEY = 'SUA_CHAVE_ANON_AQUI';
+        // CONFIGURACAO DO SUPABASE
+        const SUPABASE_URL = 'https://neiohdvunvmgqznmyviz.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_pl5_hDZ-ar6wMJAIVsfggw_svHxW3IZ';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const isProfessor = window.location.search.includes('professor=true');
         let meuNome = localStorage.getItem('autocad_aluno_nome') || '';
-
-        // Banco de Questões (30 oficiais + práticas)[cite: 2, 3, 4, 5, 6, 7, 8, 9]
-        const bancoPerguntas = [
-            { q: "1. Qual comando é mais adequado para produzir uma transformação simétrica (reflexão) em relação a um eixo indicado?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) ROTATE", "E) MOVE"], c: 2 },[cite: 2]
-            { q: "2. Qual comando permite gerar cópias paralelas mantendo uma distância definida?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) TRIM", "E) ROTATE"], c: 1 },[cite: 2]
-            { q: "3. Qual comando é utilizado para arredondar o encontro entre duas linhas, criando um raio definido?", op: ["A) TRIM", "B) FILLET", "C) CHAMFER", "D) OFFSET", "E) EXTEND"], c: 1 }
-            // (As demais questões continuam carregadas no código para o sorteio)
-        ];
 
         window.onload = async () => {
             if (isProfessor) {
@@ -157,7 +141,7 @@
         async function profIniciarTorneio() {
             const { data: alunos } = await supabaseClient.from('participantes').select('*');
             if(!alunos || alunos.length < 2) return alert("É preciso pelo menos 2 alunos conectados!");
-            alert(`Torneio pronto para iniciar com ${alunos.length} alunos! (Próxima etapa: montagem de chaves em tempo real)`);
+            alert(`Torneio pronto para iniciar com ${alunos.length} alunos!`);
         }
     </script>
 </body>

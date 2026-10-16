@@ -22,6 +22,7 @@ create or replace function public.ac_is_admin() returns boolean language sql sec
 create or replace function public.ac_join(p_name text) returns uuid language plpgsql security definer set search_path='' as $$
 declare v_id uuid;
 begin
+ perform pg_advisory_xact_lock_shared(100019);
  if auth.uid() is null then raise exception 'Faça login anônimo primeiro'; end if;
  if (select started from public.ac_settings where id=1) then raise exception 'Inscrições encerradas'; end if;
  if length(trim(p_name)) not between 2 and 50 then raise exception 'Nome deve ter de 2 a 50 caracteres'; end if;
@@ -95,6 +96,7 @@ end $$;
 create or replace function public.ac_answer(p_match uuid,p_question int,p_choice int) returns jsonb language plpgsql security definer set search_path='' as $$
 declare m public.ac_matches%rowtype; v_player uuid; v_correct int; v_count int; v_score int; v_done boolean; v_is1 boolean; v_winner uuid; v_other uuid; 
 begin
+ perform pg_advisory_xact_lock_shared(100019);
  perform pg_advisory_xact_lock(hashtext(p_match::text));
  select id into v_player from public.ac_players where user_id=auth.uid();
  select * into m from public.ac_matches where id=p_match for update;
@@ -147,3 +149,44 @@ end $$;
 revoke all on function public.ac_is_admin(),public.ac_join(text),public.ac_start(),public.ac_advance(),public.ac_answer(uuid,int,int),public.ac_state() from public;
 grant execute on function public.ac_is_admin(),public.ac_join(text),public.ac_start(),public.ac_answer(uuid,int,int),public.ac_state() to authenticated;
 -- ac_advance é invocada internamente por funções SECURITY DEFINER, nunca diretamente pelo cliente.
+
+-- Execute uma vez no SQL Editor do Supabase, antes de publicar o novo painel.
+begin;
+create table if not exists public.ac_archives (
+ id uuid primary key default gen_random_uuid(),
+ archived_at timestamptz not null default now(),
+ archived_by uuid not null,
+ snapshot jsonb not null
+);
+alter table public.ac_archives enable row level security;
+revoke all on public.ac_archives from anon, authenticated;
+
+create or replace function public.ac_reset() returns uuid
+language plpgsql security definer set search_path='' as $$
+declare v_archive uuid;
+begin
+ if not public.ac_is_admin() then raise exception 'Apenas professor'; end if;
+ perform pg_advisory_xact_lock(100019);
+ if not (select started from public.ac_settings where id=1) then
+  raise exception 'O campeonato ainda não foi iniciado';
+ end if;
+ insert into public.ac_archives(archived_by,snapshot)
+ values(auth.uid(),jsonb_build_object(
+  'players',(select coalesce(jsonb_agg(to_jsonb(p)),'[]'::jsonb) from public.ac_players p),
+  'matches',(select coalesce(jsonb_agg(to_jsonb(m)),'[]'::jsonb) from public.ac_matches m),
+  'answers',(select coalesce(jsonb_agg(to_jsonb(a)),'[]'::jsonb) from public.ac_answers a),
+  'meta',(select coalesce(jsonb_agg(to_jsonb(t)),'[]'::jsonb) from public.ac_meta t),
+  'questions',(select coalesce(jsonb_agg(to_jsonb(q)),'[]'::jsonb) from public.ac_questions q),
+  'settings',(select to_jsonb(s) from public.ac_settings s where id=1)
+ )) returning id into v_archive;
+ delete from public.ac_answers;
+ delete from public.ac_matches;
+ delete from public.ac_players;
+ delete from public.ac_meta;
+ update public.ac_settings set started=false,created_at=now() where id=1;
+ return v_archive;
+end $$;
+revoke all on function public.ac_reset() from public;
+grant execute on function public.ac_reset() to authenticated;
+
+commit;

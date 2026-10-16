@@ -20,7 +20,7 @@
 
 ## Regras
 - Exige **4 participantes** para iniciar e definir 3 colocações.
-- Inscrições encerram após o início. Não existe botão de reiniciar nesta versão, para evitar apagamentos acidentais.
+- Inscrições encerram após o início. O professor pode usar “Arquivar e abrir nova edição”, com confirmação. O campeonato anterior é arquivado no banco e os participantes devem se inscrever novamente.
 - Vence quem tiver mais acertos. Em empate, vence quem concluiu as 10 respostas em menor intervalo entre a primeira e a última; se persistir, desempate aleatório.
 - O terceiro lugar é decidido entre os dois perdedores das semifinais.
 - Uma chave pode incluir classificação automática sem duelo quando o total não é potência de 2.
@@ -29,5 +29,5 @@
 - O SQL foi preparado para o Supabase, mas **não foi executado na sua instância**, nem validado com as políticas existentes.
 - A atualização é por polling de 2,5 segundos, não push em tempo real estrito.
 - As respostas são verificadas pelo servidor, mas não há cronômetro obrigatório nem sistema anti-cola/proctoring.
-- Para nova edição do campeonato, implemente uma função administrativa de reset com confirmação e arquivamento dos resultados.
+- Para atualizar uma instalação existente, execute `reset.sql` no SQL Editor e publique novamente `index.html` e `app.js`. O botão “Arquivar e abrir nova edição” estará disponível no painel do professor após o início. Os arquivos em `ac_archives` só podem ser consultados pelo administrador do banco; não há tela de histórico ou restauração nesta versão.
 - Recomendado configurar CAPTCHA/rate limits de login anônimo e testar a capacidade de conexões para a quantidade de alunos.

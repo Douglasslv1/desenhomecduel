@@ -15,7 +15,7 @@ async function init(){try{
  }catch(e){error(e);if(teacher)show('teacher-login');else show('login')}}
 async function refresh(){state=await rpc('ac_state');$('message').textContent='';
  if(teacher){if(!state.admin){show('teacher-login');$('message').textContent='Esta conta não está autorizada como professor.';return}show('teacher');renderTeacher();return}
- if(!state.registered){show('login');if(state.started)$('join-btn').disabled=true;return}
+ if(!state.registered){show('login');$('join-btn').disabled=!!state.started;return}
  const active=state.active;if(!active){show('waiting');$('waiting-text').textContent=state.started?'Aguardando classificação ou próxima rodada. Confira a árvore no projetor.':'Inscrição confirmada! Aguardando o professor iniciar.';return}
  show('quiz');renderQuiz();}
 function renderTeacher(){
@@ -26,6 +26,9 @@ function renderTeacher(){
  $('start').textContent=state.started?'Campeonato em andamento':'Sortear confrontos e iniciar';
  const standard=matches.filter(m=>!m.third),rounds=[...new Set(standard.map(m=>m.round))].sort((a,b)=>a-b);
  const last=rounds.at(-1),final=standard.find(m=>m.round===last),third=matches.find(m=>m.third);
+ $('reset').hidden=!state.started;
+ $('reset').disabled=busy;
+ if(final?.winner&&third?.winner)$('start').textContent='Campeonato encerrado';
  const pending=standard.filter(m=>m.p1&&m.p2&&!m.winner);
  const current=pending.length?Math.min(...pending.map(m=>m.round)):null;
  const labels=r=>r===last?'Final':r===last-1?'Semifinais':r===last-2?'Quartas de final':`Rodada ${r}`;
@@ -62,6 +65,11 @@ async function answer(match,question,choice){if(busy)return;busy=true;$('options
  try{const r=await rpc('ac_answer',{p_match:match,p_question:question,p_choice:choice});$('feedback').textContent=r.correct?'✓ Resposta correta!':'✕ Resposta incorreta.';await refresh();setTimeout(()=>$('feedback').textContent='',1800)}catch(e){error(e);await refresh()}finally{busy=false}}
 $('join').onsubmit=async e=>{e.preventDefault();try{await rpc('ac_join',{p_name:$('name').value.trim()});await refresh()}catch(e){error(e)}};
 $('start').onclick=async()=>{if(!confirm('Iniciar o torneio? Novas inscrições serão bloqueadas.'))return;busy=true;try{await rpc('ac_start');await refresh()}catch(e){error(e)}finally{busy=false}};
+$('reset').onclick=async()=>{
+ if(busy||!confirm('Arquivar este campeonato e abrir uma nova edição? Os participantes deverão se inscrever novamente. As perguntas e o acesso do professor serão mantidos.'))return;
+ busy=true;$('reset').disabled=true;
+ try{await rpc('ac_reset');await refresh()}catch(e){error(e)}finally{busy=false;$('reset').disabled=false}
+};
 $('teacher-form').onsubmit=async e=>{e.preventDefault();try{const {error:e}=await db.auth.signInWithPassword({email:$('email').value,password:$('password').value});if(e)throw e;await refresh()}catch(e){error(e)}};
 $('logout').onclick=async()=>{await db.auth.signOut();location.reload()};
 init();

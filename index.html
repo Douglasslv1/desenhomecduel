@@ -9,6 +9,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>body { font-family: 'Poppins', sans-serif; }</style>
 </head>
+<script>
+    // As credenciais vão direto aqui dentro do arquivo index.html
+    const SUPABASE_URL = 'https://neiohdvunvmgqznmyviz.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_pl5_hDZ-ar6wMJAIVsfggw_svHxW3IZ';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // ... resto do código do jogo ...
+</script>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
 
     <header class="bg-slate-800 border-b border-slate-700 py-4 px-8 shadow-md flex justify-between items-center">

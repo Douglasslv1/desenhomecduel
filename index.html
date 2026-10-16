@@ -62,8 +62,8 @@
             <div id="aluno-feedback" class="hidden text-center p-2.5 rounded-xl font-semibold text-sm"></div>
         </section>
 
-        <!-- TELA DO PROFESSOR: PAINEL DE CONTROLE -->
-        <section id="view-professor" class="w-full max-w-4xl bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700 hidden">
+        <!-- TELA DO PROFESSOR: PAINEL DE CONTROLE E ÁRVORE DE CHAVEAMENTO -->
+        <section id="view-professor" class="w-full max-w-5xl bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700 hidden">
             <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
                 <h2 class="text-2xl font-bold text-red-400">Painel de Controle do Professor</h2>
                 <span id="prof-contador" class="bg-slate-900 px-4 py-1.5 rounded-xl border border-slate-700 text-sm font-bold text-slate-300">0 Alunos Conectados</span>
@@ -71,14 +71,37 @@
 
             <div class="mb-6">
                 <h3 class="text-sm font-semibold text-slate-400 mb-2">Alunos na Sala de Espera:</h3>
-                <div id="prof-lista-alunos" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-3 bg-slate-900 rounded-xl border border-slate-800 min-h-[60px]">
+                <div id="prof-lista-alunos" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-3 bg-slate-900 rounded-xl border border-slate-800 min-h-[50px]">
                     <span class="text-slate-500 text-sm italic">Nenhum aluno conectado ainda...</span>
                 </div>
             </div>
 
+            <!-- ÁRVORE DE TORNEIO (ESTILO FUTEBOL / MATA-MATA) -->
             <div id="prof-area-chaveamento" class="mb-6 hidden">
-                <h3 class="text-sm font-semibold text-red-400 mb-2">Chaveamento Gerado (Mata-Mata - Melhor de 10 Questões):</h3>
-                <div id="prof-container-confrontos" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                <h3 class="text-sm font-semibold text-red-400 mb-3 flex items-center gap-2">
+                    🌳 Árvore de Torneio (Mata-Mata ao Vivo)
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-900 p-5 rounded-xl border border-slate-700">
+                    
+                    <!-- Coluna Oitavas / Quartas -->
+                    <div class="space-y-3">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center mb-2">Fase Inicial (Confrontos)</div>
+                        <div id="coluna-fase-1" class="space-y-2"></div>
+                    </div>
+
+                    <!-- Coluna Semifinais -->
+                    <div class="space-y-3 flex flex-col justify-around">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center mb-2">Semifinais ⚔️</div>
+                        <div id="coluna-fase-semi" class="space-y-4"></div>
+                    </div>
+
+                    <!-- Coluna Final e Pódio -->
+                    <div class="space-y-3 flex flex-col justify-center">
+                        <div class="text-xs font-bold text-yellow-400 uppercase tracking-wider text-center mb-2">🏆 Grande Final & Pódio</div>
+                        <div id="coluna-fase-final" class="space-y-3"></div>
+                    </div>
+
+                </div>
             </div>
 
             <button id="btn-gerar-chaves" onclick="profIniciarTorneio()" class="w-full bg-emerald-600 hover:bg-emerald-700 font-bold py-3.5 rounded-xl transition shadow-lg text-lg cursor-pointer">
@@ -100,10 +123,9 @@
         const isProfessor = window.location.search.includes('professor=true');
         let meuNome = localStorage.getItem('autocad_aluno_nome') || '';
 
-        // Banco com as 40 Questões Oficiais e Práticas de CAD[cite: 2, 3, 4, 5, 6, 7, 8, 9]
         const bancoPerguntas = [
-            { q: "1. Qual comando é mais adequado para produzir uma transformação simétrica (reflexão) em relação a um eixo indicado?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) ROTATE", "E) MOVE"], c: 2 },
-            { q: "2. Qual comando permite gerar cópias paralelas mantendo uma distância definida?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) TRIM", "E) ROTATE"], c: 1 },
+            { q: "1. Qual comando é mais adequado para produzir uma transformação simétrica (reflexão) em relação a um eixo indicado?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) ROTATE", "E) MOVE"], c: 2 },[cite: 2]
+            { q: "2. Qual comando permite gerar cópias paralelas mantendo uma distância definida?", op: ["A) COPY", "B) OFFSET", "C) MIRROR", "D) TRIM", "E) ROTATE"], c: 1 },[cite: 2]
             { q: "3. Qual comando é utilizado para arredondar o encontro entre duas linhas, criando um raio definido?", op: ["A) TRIM", "B) FILLET", "C) CHAMFER", "D) OFFSET", "E) EXTEND"], c: 1 },
             { q: "4. Qual comando cria uma cópia de um objeto sem apagar o original?", op: ["A) MOVE", "B) COPY", "C) JOIN", "D) TRIM", "E) FILLET"], c: 1 },
             { q: "5. Qual comando deve ser utilizado para girar um objeto em torno de um ponto-base?", op: ["A) ROTATE", "B) MIRROR", "C) OFFSET", "D) MOVE", "E) EXTEND"], c: 0 },
@@ -231,7 +253,6 @@
             document.getElementById('aluno-fase-txt').textContent = `Fase: ${duelo.rodada}`;
             document.getElementById('aluno-confronto-txt').textContent = `Adversário: ${adversario}`;
 
-            // Sorteia 10 perguntas aleatórias exclusivas para este desafio
             let copiaBanco = [...bancoPerguntas].sort(() => Math.random() - 0.5);
             minhas10Perguntas = copiaBanco.slice(0, 10);
             indiceQuestaoAtual = 0;
@@ -243,11 +264,10 @@
 
         function mostrarQuestaoAtual() {
             if(indiceQuestaoAtual >= 10) {
-                // Fim das 10 perguntas
                 document.getElementById('aluno-pergunta-txt').textContent = "🏁 Fim do seu desafio! Você concluiu as 10 perguntas.";
                 document.getElementById('aluno-opcoes-container').innerHTML = `
                     <div class="bg-slate-900 p-4 rounded-xl text-center text-emerald-400 font-bold text-base">
-                        Total de acertos: ${meusAcertos} de 10. Aguarde o resultado do seu adversário na tela do projetor!
+                        Total de acertos: ${meusAcertos} de 10. Aguarde o resultado na árvore da turma!
                     </div>
                 `;
                 document.getElementById('aluno-feedback').classList.add('hidden');
@@ -285,7 +305,6 @@
                 feedback.textContent = "❌ Incorreto!";
             }
 
-            // Avança para a próxima questão após 1.2 segundos
             setTimeout(() => {
                 indiceQuestaoAtual++;
                 mostrarQuestaoAtual();
@@ -317,7 +336,7 @@
                     rodada: 'Oitavas de Final',
                     aluno_1: p1,
                     aluno_2: p2,
-                    pergunta_texto: 'Início do Duelo - 10 Perguntas',
+                    pergunta_texto: 'Desafio 10 Questões',
                     opcao_correta: 0,
                     status: 'pendente'
                 }]);
@@ -326,16 +345,29 @@
             }
 
             document.getElementById('prof-area-chaveamento').classList.remove('hidden');
-            const container = document.getElementById('prof-container-confrontos');
-            container.innerHTML = confrontos.map((c, idx) => `
-                <div class="bg-slate-900 border border-slate-700 p-3 rounded-xl flex justify-between items-center text-sm">
-                    <span class="font-bold text-blue-400 w-1/3 text-right truncate">${c.p1}</span>
-                    <span class="text-xs uppercase bg-red-600/20 text-red-400 border border-red-500/30 px-2.5 py-0.5 rounded-full font-bold">Duelo ${idx + 1}</span>
-                    <span class="font-bold text-red-400 w-1/3 text-left truncate">${c.p2}</span>
+            
+            // Renderiza a Árvore Visual Estilo Torneio de Futebol
+            document.getElementById('coluna-fase-1').innerHTML = confrontos.map((c, idx) => `
+                <div class="bg-slate-800 border border-slate-700 p-2.5 rounded-lg flex justify-between items-center text-xs shadow">
+                    <span class="font-bold text-blue-400 truncate w-5/12 text-right">${c.p1}</span>
+                    <span class="bg-red-600/20 text-red-400 px-2 py-0.5 rounded font-bold">VS</span>
+                    <span class="font-bold text-red-400 truncate w-5/12 text-left">${c.p2}</span>
                 </div>
             `).join('');
 
-            alert("Torneio iniciado! Cada dupla recebeu sua bateria exclusiva de 10 perguntas.");
+            document.getElementById('coluna-fase-semi').innerHTML = `
+                <div class="bg-slate-800 border border-dashed border-slate-600 p-3 rounded-lg text-center text-xs text-slate-400 italic">
+                    Aguardando vencedores da fase anterior...
+                </div>
+            `;
+
+            document.getElementById('coluna-fase-final').innerHTML = `
+                <div class="bg-slate-800 border border-dashed border-yellow-600/50 p-3 rounded-lg text-center text-xs text-yellow-400/70 italic">
+                    🥇 Pódio em disputa
+                </div>
+            `;
+
+            alert("Torneio iniciado! A árvore de chaveamento já está projetada na tela.");
         }
     </script>
 </body>

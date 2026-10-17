@@ -14,9 +14,10 @@ async function request(route,body,token){
 async function rpc(session,fn,args={}){return request('/rest/v1/rpc/'+fn,args,session.access_token)}
 async function playV2(mode){
  const expected=mode==='level'?'leveling':'knockout';let submitted=0,expired=0;
+ const delay=Math.min(10000,Math.max(0,Number(process.env.AC_TEST_STEP_MS)||0));
  const sets=new Map();
  for(let pass=0;pass<12;pass++){
-  const progress=await Promise.all(sessions.map(async(session,i)=>{
+  const progress=await Promise.all(sessions.map(async(session,i)=>{try{
    let state=await rpc(session,'ac_state');
    if(state.disqualified||!state.active||state.active.stage!==expected)return false;
    const run=state.active.id;let changed=false;
@@ -26,9 +27,11 @@ async function playV2(mode){
     if(sets.has(key)&&sets.get(key)!==value)throw Error('Pergunta divergente entre adversários ou no nivelamento');sets.set(key,value);
     const result=await rpc(session,'ac_submit',{p_run:run,p_question:current.id,p_choice:(i+current.id)%current.op.length});
     if(result.accepted)submitted++;else if(result.expired)expired++;else throw Error('Resposta não reconhecida');
+    if(delay)await new Promise(resolve=>setTimeout(resolve,delay));
     changed=true;state=await rpc(session,'ac_state');
    }
    if(changed)console.log(`${session.name}: etapa respondida`);return changed;
+   }catch(e){const current=await rpc(session,'ac_state');if(current.disqualified){console.log(`${session.name}: desclassificado pelo professor; respostas interrompidas`);return false}throw e}
   }));
   if(!progress.some(Boolean))break;
  }

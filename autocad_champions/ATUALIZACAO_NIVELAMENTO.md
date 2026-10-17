@@ -35,7 +35,8 @@ Para uma instalação nova, execute schema.sql, questions.sql e competition-v2.s
 
 ## Desclassificação
 
-- Em **Participantes e resultados do nivelamento**, cada participante ainda habilitado tem um botão **Desclassificar**.
+- No mata-mata, o botão **Desclassificar** fica visível junto ao nome do jogador no próprio card do confronto, inclusive no modo projeção. Aparece apenas no confronto ainda não resolvido de um participante habilitado.
+- Em **Participantes e resultados do nivelamento**, cada participante ainda habilitado também tem um botão **Desclassificar**. A lista abre automaticamente na inscrição e no nivelamento, podendo ser recolhida pelo professor.
 - A ação exige motivo e confirmação. O banco exige autenticação de professor e registra responsável, data e motivo.
 - No nivelamento, o participante desclassificado é retirado da formação da chave.
 - No mata-mata, o adversário habilitado avança sem precisar concluir as respostas. Caso ainda não tenha sido definido, o avanço é resolvido assim que a chave o definir.

@@ -2,7 +2,7 @@ const SUPABASE_URL='https://neiohdvunvmgqznmyviz.supabase.co';
 const SUPABASE_KEY='sb_publishable_pl5_hDZ-ar6wMJAIVsfggw_svHxW3IZ';
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const teacher=new URLSearchParams(location.search).has('professor');
-let state=null,busy=false,pollingId=null,timerId=null,deadlineAt=0,lastExpiryRefresh=0;
+let state=null,busy=false,pollingId=null,timerId=null,deadlineAt=0,lastExpiryRefresh=0,renderedPhase=null;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const show=id=>['login','waiting','quiz','teacher-login','teacher'].forEach(x=>$(x).hidden=x!==id);
@@ -23,6 +23,8 @@ async function refresh(){state=await rpc('ac_state');$('message').textContent=''
  show('quiz');renderQuiz();}
 function renderTeacher(){
  const players=state.players||[],matches=state.matches||[];
+ if(renderedPhase!==state.phase){$('participants-details').open=!['knockout','finished'].includes(state.phase);renderedPhase=state.phase}
+ $('teacher').classList.toggle('leveling-phase',state.phase==='leveling');
  $('count').textContent=`${players.length} inscritos`;
  $('roster').innerHTML=players.map(p=>`<div class="player-row"><span>${esc(p.name)}${p.disqualified?' · Desclassificado':''}</span><span class="muted">${p.level_score==null?'Aguardando nivelamento':`${p.level_score} acertos · ${Math.max(0,(p.level_answered||0)-p.level_score)} erros/tempo esgotado · ${p.level_answered||0}/10 respondidas${p.level_done?' · Concluído':''}`}</span>${p.can_disqualify?`<button type="button" class="disqualify" data-player="${esc(p.id)}">Desclassificar</button>`:p.disqualified?`<span class="muted" title="${esc(p.reason)}">${esc(p.reason)}</span>`:''}</div>`).join('')||'Nenhum estudante inscrito.';
  $('start').disabled=state.started||players.filter(p=>!p.disqualified).length<4||busy||state.api_version!==2;
@@ -65,7 +67,10 @@ function renderTeacher(){
   $('podium').innerHTML=`<h3>🏆 PÓDIO DOS CAMPEÕES</h3><div class="podium-stands">${place(2,runner||'Não atribuído','🥈','second')}${place(1,final.winner,'🏆','first')}${place(3,third?.winner||'Não atribuído','🥉','third')}</div>`;
  } else $('podium').innerHTML='<h3>🏆 PÓDIO DOS CAMPEÕES</h3><div class="podium-pending">🥇 🥈 🥉<p>O pódio será revelado ao término da final e da disputa de terceiro lugar.</p></div>';
 }
-function card(m){const bye=!!m.winner&&(!m.p1||!m.p2);const name=(p,score,id,dq)=>{const win=p&&(m.winner_id?m.winner_id===id:m.winner===p);return `<div class="competitor ${win?'win':''} ${dq?'disqualified':''}"><span title="${esc(p||(bye?'Sem adversário':'A definir'))}">${esc(p||(bye?'Sem adversário':'A definir'))}</span><strong>${dq?'DQ':p?(score??'–'):''}${win?' ✓':''}</strong></div>`};
+function card(m){const bye=!!m.winner&&(!m.p1||!m.p2);const name=(p,score,id,dq)=>{const win=p&&(m.winner_id?m.winner_id===id:m.winner===p);
+ const canDisqualify=teacher&&state?.admin&&!m.winner&&m.status==='waiting'&&!dq&&state.players?.some(player=>player.id===id&&player.can_disqualify);
+ const action=canDisqualify?`<button type="button" class="card-disqualify" data-player="${esc(id)}" aria-label="Desclassificar ${esc(p)}" title="Desclassificar ${esc(p)}" ${busy?'disabled':''}>Desclassificar</button>`:'';
+ return `<div class="competitor ${win?'win':''} ${dq?'disqualified':''}"><div class="competitor-identity"><span title="${esc(p||(bye?'Sem adversário':'A definir'))}">${esc(p||(bye?'Sem adversário':'A definir'))}</span>${action}</div><strong>${dq?'DQ':p?(score??'–'):''}${win?' ✓':''}</strong></div>`};
  return `<div class="match ${bye?'automatic':''}"><small>${m.status==='empty'?'Sem vencedor habilitado':m.winner&&(m.dq1||m.dq2)?'Vitória por desclassificação':bye?'Classificação automática':m.winner?'Concluído':m.p1&&m.p2?'Em disputa':'Aguardando classificados'}</small>${name(m.p1,m.s1,m.p1_id,m.dq1)}${name(m.p2,m.s2,m.p2_id,m.dq2)}</div>`}
 function renderQuiz(){const a=state.active,qs=state.questions||[],answered=state.answers||[];const next=qs.find(q=>!answered.some(x=>x.id===q.id));
  const match=state.matches.find(m=>m.id===(a.match_id||a.id));
@@ -95,16 +100,19 @@ async function answer(match,question,choice){if(busy)return;busy=true;$('options
 $('join').onsubmit=async e=>{e.preventDefault();try{await rpc('ac_join',{p_name:$('name').value.trim()});await refresh()}catch(e){error(e)}};
 $('start').onclick=async()=>{if(busy||!confirm('Iniciar o nivelamento? As inscrições serão encerradas e todos terão dez questões, com 1min30s por questão. O relógio começa agora para todos os inscritos.'))return;busy=true;try{await rpc('ac_start');await refresh()}catch(e){error(e)}finally{busy=false}};
 $('knockout').onclick=async()=>{if(busy||!confirm('Formar o mata-mata por desempenho? As vagas automáticas serão atribuídas aos melhores resultados. O tempo das primeiras partidas começa assim que forem formadas.'))return;busy=true;try{await rpc('ac_start_knockout');await refresh()}catch(e){error(e)}finally{busy=false}};
-$('roster').onclick=async e=>{
+async function handleDisqualification(e){
+ if(!teacher||!state?.admin)return;
  const button=e.target.closest('button[data-player]');if(!button||busy)return;
- const player=state.players.find(p=>p.id===button.dataset.player);if(!player)return;
+ const player=state.players.find(p=>p.id===button.dataset.player);if(!player?.can_disqualify)return;
  const reason=prompt(`Motivo da desclassificação de ${player.name} (3 a 500 caracteres):`);
  if(reason===null)return;
  if(reason.trim().length<3||reason.trim().length>500){error({message:'Informe um motivo entre 3 e 500 caracteres.'});return}
  if(!confirm(`Desclassificar ${player.name}? Esta ação não pode ser desfeita pelo painel. No mata-mata, o adversário habilitado avança.\nMotivo: ${reason.trim()}`))return;
  busy=true;button.disabled=true;
  try{await rpc('ac_disqualify',{p_player:player.id,p_reason:reason.trim()});await refresh()}catch(e){error(e)}finally{busy=false;button.disabled=false}
-};
+}
+$('roster').onclick=handleDisqualification;
+$('bracket').onclick=handleDisqualification;
 $('reset').onclick=async()=>{
  if(busy||!confirm('Arquivar este campeonato e abrir uma nova edição? Os participantes deverão se inscrever novamente. As perguntas e o acesso do professor serão mantidos.'))return;
  busy=true;$('reset').disabled=true;

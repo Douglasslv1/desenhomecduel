@@ -18,7 +18,7 @@ function tournament(n){
  return {matches,byes,played,rounds};
 }
 for(let n=4;n<=64;n++)tournament(n);
-const sample=tournament(26),elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{hidden:true});return elements.get(id)};
+const sample=tournament(26),elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{hidden:true,classList:{toggle:()=>{}}});return elements.get(id)};
 const ctx=vm.createContext({window:{supabase:{createClient:()=>({})}},URLSearchParams,location:{search:'?professor=true'},document:{getElementById:el,addEventListener:()=>{}},console});
 vm.runInContext(fs.readFileSync('app.js','utf8').replace(/init\(\);\s*$/,''),ctx);
 ctx.sample={started:true,players:Array.from({length:26},(_,i)=>({name:`Teste ${i+1}`})),matches:sample.matches};vm.runInContext('state=sample;renderTeacher()',ctx);

@@ -1,6 +1,6 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const elements=new Map();
-const el=id=>{if(!elements.has(id))elements.set(id,{hidden:false,disabled:false,textContent:'',innerHTML:''});return elements.get(id)};
+const el=id=>{if(!elements.has(id))elements.set(id,{hidden:false,disabled:false,textContent:'',innerHTML:'',classList:{toggle:()=>{}}});return elements.get(id)};
 let result={admin:true,registered:true,started:true,players:[],matches:[]},calls=[],confirmed=true,fail=false;
 const context=vm.createContext({window:{supabase:{createClient:()=>({})}},location:{search:'?professor=true'},URLSearchParams,document:{getElementById:el,addEventListener:()=>{}},console,confirm:()=>confirmed});
 vm.runInContext(fs.readFileSync('app.js','utf8').replace(/init\(\);\s*$/,''),context);

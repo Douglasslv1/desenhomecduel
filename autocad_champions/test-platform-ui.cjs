@@ -11,6 +11,7 @@ function env(teacher){
   const data=name==='cp_catalog'?catalog:name==='cp_resolve'?{id:'edition1',code:'ABCD12345678'}:name==='cp_rpc'?selectedState:name==='cp_create_edition'?'edition1':name==='cp_bank_questions'?[{id:1,statement:'Enunciado teste',options:['A) A','B) B','C) C','D) D','E) E'],correct:0}]:'new-id';
   return {data,error:null};
  }})}}});
+ ctx.window.ChampionsExperience={init:()=>{},confirm:async()=>({confirmed:true,value:'Motivo'}),onState:()=>{},clear:()=>{}};
  vm.runInContext(app,ctx);vm.runInContext(portal,ctx);return {ctx,$,calls,intervals,setState:s=>selectedState=s};
 }
 (async()=>{

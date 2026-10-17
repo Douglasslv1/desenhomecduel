@@ -8,6 +8,7 @@ const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const show=id=>['login','waiting','quiz','teacher-login','teacher','portal','entry','bank-editor'].forEach(x=>$(x).hidden=x!==id);
 const error=e=>{console.error(e);$('message').textContent=e.message||String(e)};
+async function confirmAction(message,options={}){return (await window.ChampionsExperience.confirm({message,...options})).confirmed}
 async function rpc(fn,args={}){
  const scoped=fn.startsWith('ac_')&&editionId;
  if(fn.startsWith('ac_')&&!editionId)throw Error('Selecione um campeonato primeiro.');
@@ -23,11 +24,11 @@ async function refresh(){const requestedEdition=editionId,version=++refreshVersi
  state=next;$('message').textContent='';
  if(state.edition){$('edition-title').textContent=`${state.edition.discipline} · ${state.edition.name}`;$('edition-context').hidden=false;$('edition-code').textContent=`Código: ${state.edition.code}`}
  deadlineAt=state.active?.deadline?performance.now()+Math.max(0,Date.parse(state.active.deadline)-Date.parse(state.server_now)):0;
- if(teacher){if(!state.admin){show('teacher-login');$('message').textContent='Esta conta não está autorizada como professor.';return}show('teacher');renderTeacher();return}
+ if(teacher){if(!state.admin){show('teacher-login');$('message').textContent='Esta conta não está autorizada como professor.';return}show('teacher');renderTeacher();window.ChampionsExperience?.onState(state,{teacher:true});return}
  if(!state.registered){show('login');$('join-btn').disabled=!!state.started;return}
- if(state.disqualified){show('waiting');$('waiting-text').textContent='Você foi desclassificado desta edição. Procure o professor para mais informações.';return}
- const active=state.active;if(!active){show('waiting');$('waiting-text').textContent=state.phase==='leveling'?'Nivelamento concluído. Aguarde o professor formar os confrontos por desempenho.':state.phase==='finished'?'Campeonato encerrado! Confira o pódio no painel do professor.':state.started?'Aguardando classificação ou próxima rodada. Confira a árvore no projetor.':'Inscrição confirmada! Aguardando o professor iniciar o nivelamento.';return}
- show('quiz');renderQuiz();}
+ if(state.disqualified){show('waiting');window.ChampionsExperience?.onState(state);$('waiting-text').textContent='Você foi desclassificado desta edição. Procure o professor para mais informações.';return}
+ const active=state.active;if(!active){show('waiting');$('waiting-text').textContent=state.phase==='leveling'?'Nivelamento concluído. Aguarde o professor formar os confrontos por desempenho.':state.phase==='finished'?'Campeonato encerrado! Confira o pódio no painel do professor.':state.started?'Aguardando classificação ou próxima rodada. Confira a árvore no projetor.':'Inscrição confirmada! Aguardando o professor iniciar o nivelamento.';window.ChampionsExperience?.onState(state);return}
+ show('quiz');renderQuiz();window.ChampionsExperience?.onState(state);}
 function renderTeacher(){
  const players=state.players||[],matches=state.matches||[];
  const archived=!!state.edition?.archived;
@@ -108,23 +109,22 @@ function updateTimer(){
 async function answer(match,question,choice){if(busy)return;busy=true;$('options').querySelectorAll('button').forEach(b=>b.disabled=true);
  try{const r=await rpc(state.api_version===2?'ac_submit':'ac_answer',state.api_version===2?{p_run:match,p_question:question,p_choice:choice}:{p_match:match,p_question:question,p_choice:choice});$('feedback').textContent=r.expired?'Tempo esgotado. A resposta não foi aceita.':r.correct?'✓ Resposta correta!':'✕ Resposta incorreta.';await refresh();setTimeout(()=>$('feedback').textContent='',1800)}catch(e){try{await refresh()}catch{}error(e)}finally{busy=false}}
 $('join').onsubmit=async e=>{e.preventDefault();try{await rpc('ac_join',{p_name:$('name').value.trim()});await refresh()}catch(e){error(e)}};
-$('start').onclick=async()=>{if(busy||!confirm('Iniciar o nivelamento? As inscrições serão encerradas e todos terão dez questões, com 1min30s por questão. O relógio começa agora para todos os inscritos.'))return;busy=true;try{await rpc('ac_start');await refresh()}catch(e){error(e)}finally{busy=false}};
-$('knockout').onclick=async()=>{if(busy||!confirm('Formar o mata-mata por desempenho? As vagas automáticas serão atribuídas aos melhores resultados. O tempo das primeiras partidas começa assim que forem formadas.'))return;busy=true;try{await rpc('ac_start_knockout');await refresh()}catch(e){error(e)}finally{busy=false}};
+$('start').onclick=async()=>{if(busy||!await confirmAction('As inscrições serão encerradas e todos terão dez questões, com 1min30s por questão. O relógio começa agora para todos os inscritos.',{title:'Iniciar o nivelamento?',confirmLabel:'Iniciar nivelamento'}))return;busy=true;try{await rpc('ac_start');await refresh()}catch(e){error(e)}finally{busy=false}};
+$('knockout').onclick=async()=>{if(busy||!await confirmAction('Os confrontos serão formados por desempenho. As vagas automáticas serão atribuídas aos melhores resultados e o relógio das primeiras partidas começa assim que forem formadas.',{title:'Vamos para o mata-mata?',confirmLabel:'Formar confrontos'}))return;busy=true;try{await rpc('ac_start_knockout');await refresh()}catch(e){error(e)}finally{busy=false}};
 async function handleDisqualification(e){
  if(!teacher||!state?.admin)return;
  const button=e.target.closest('button[data-player]');if(!button||busy)return;
  const player=state.players.find(p=>p.id===button.dataset.player);if(!player?.can_disqualify)return;
- const reason=prompt(`Motivo da desclassificação de ${player.name} (3 a 500 caracteres):`);
- if(reason===null)return;
- if(reason.trim().length<3||reason.trim().length>500){error({message:'Informe um motivo entre 3 e 500 caracteres.'});return}
- if(!confirm(`Desclassificar ${player.name}? Esta ação não pode ser desfeita pelo painel. No mata-mata, o adversário habilitado avança.\nMotivo: ${reason.trim()}`))return;
+ const decision=await window.ChampionsExperience.confirm({title:`Desclassificar ${player.name}?`,message:'O adversário habilitado avança no mata-mata. Esta ação não pode ser desfeita pelo painel. Registre o motivo para confirmar.',confirmLabel:'Desclassificar jogador',danger:true,input:true,inputLabel:'Motivo da desclassificação',minLength:3,maxLength:500});
+ if(!decision.confirmed)return;
+ const reason=decision.value;
  busy=true;button.disabled=true;
  try{await rpc('ac_disqualify',{p_player:player.id,p_reason:reason.trim()});await refresh()}catch(e){error(e)}finally{busy=false;button.disabled=false}
 }
 $('roster').onclick=handleDisqualification;
 $('bracket').onclick=handleDisqualification;
 $('reset').onclick=async()=>{
- if(busy||!confirm('Arquivar esta edição? Os resultados serão preservados e novas respostas serão bloqueadas. Você poderá criar outra edição na página da disciplina.'))return;
+ if(busy||!await confirmAction('Os resultados serão preservados e novas respostas serão bloqueadas. Você poderá criar outra edição na página da disciplina.',{title:'Arquivar esta edição?',confirmLabel:'Arquivar edição',danger:true}))return;
  busy=true;$('reset').disabled=true;
  try{await rpc('cp_archive',{p_edition:editionId});await refresh()}catch(e){error(e)}finally{busy=false;$('reset').disabled=false}
 };

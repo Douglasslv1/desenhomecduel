@@ -2,7 +2,7 @@ let catalog=null,disciplineId=null,editingBank=null,bankQuestions=[];
 document.body.classList.toggle('teacher-view',teacher);
 const phaseLabel=phase=>({registration:'Inscrições abertas',leveling:'Nivelamento',knockout:'Mata-mata',finished:'Encerrado'}[phase]||phase);
 function entryUrl(code,professor=false){const url=new URL(location.href);url.search='';url.hash='';url.searchParams.set('campeonato',code);if(professor)url.searchParams.set('professor','true');return url.href}
-function stopEdition(){editionId=null;state=null;deadlineAt=0;renderedPhase=null;projection(false);$('edition-context').hidden=true}
+function stopEdition(){editionId=null;state=null;deadlineAt=0;renderedPhase=null;window.ChampionsExperience?.clear();projection(false);$('edition-context').hidden=true}
 async function openPlatform(){
  const code=new URLSearchParams(location.search).get('campeonato');
  if(code){const edition=await rpc('cp_resolve',{p_code:code});editionId=edition.id;await refresh();return}
@@ -58,7 +58,7 @@ $('entry-form').onsubmit=e=>{e.preventDefault();task(async()=>{
 $('teacher-access-form').onsubmit=e=>{e.preventDefault();task(async()=>{
  await rpc('cp_set_teacher',{p_discipline:disciplineId,p_user:$('teacher-user-id').value.trim(),p_allowed:true});$('teacher-access-form').reset();await loadPortal();
 })};
-$('teacher-list').onclick=e=>task(async()=>{const button=e.target.closest('[data-remove-teacher]');if(button&&confirm('Retirar o acesso deste professor a esta disciplina?')){await rpc('cp_set_teacher',{p_discipline:disciplineId,p_user:button.dataset.removeTeacher,p_allowed:false});await loadPortal()}});
+$('teacher-list').onclick=e=>task(async()=>{const button=e.target.closest('[data-remove-teacher]');if(button&&await confirmAction('Este professor deixará de acessar os bancos e os campeonatos desta disciplina.',{title:'Retirar acesso do professor?',confirmLabel:'Retirar acesso',danger:true})){await rpc('cp_set_teacher',{p_discipline:disciplineId,p_user:button.dataset.removeTeacher,p_allowed:false});await loadPortal()}});
 async function openBank(id){
  editingBank=id;bankQuestions=await rpc('cp_bank_questions',{p_bank:id});
  const discipline=catalog.disciplines.find(d=>d.id===disciplineId),bank=discipline.banks.find(b=>b.id===id);
@@ -75,13 +75,13 @@ $('question-list').onclick=e=>{const button=e.target.closest('[data-edit-questio
 $('question-clear').onclick=()=>{$('question-form').reset();$('question-number').value=bankQuestions.length?Math.max(...bankQuestions.map(q=>q.id))+1:1};
 $('question-form').onsubmit=e=>{e.preventDefault();task(async()=>{
  const q={id:Number($('question-number').value),statement:$('question-statement').value.trim(),options:Array.from({length:5},(_,i)=>`${String.fromCharCode(65+i)}) ${$('question-option-'+i).value.trim()}`),correct:Number($('question-correct').value)};
- const exists=bankQuestions.some(x=>x.id===q.id);if(exists&&!confirm(`Salvar as alterações da questão ${q.id}? As edições já criadas manterão a versão anterior.`))return;
+ const exists=bankQuestions.some(x=>x.id===q.id);if(exists&&!await confirmAction('As edições já criadas manterão a versão anterior. O banco será atualizado para os próximos campeonatos.',{title:`Atualizar a questão ${q.id}?`,confirmLabel:'Salvar alterações'}))return;
  await rpc('cp_save_questions',{p_bank:editingBank,p_questions:[q]});await openBank(editingBank);
 })};
 $('bank-import').onchange=e=>task(async()=>{
  const file=e.target.files[0];if(!file)return;
  try{const data=JSON.parse(await file.text());if(!Array.isArray(data)||!data.length)throw Error('O arquivo deve conter uma lista de questões.');
- if(!confirm(`Adicionar ou atualizar ${data.length} questões neste banco? Números existentes serão atualizados; as edições criadas serão preservadas.`))return;
+ if(!await confirmAction('Números existentes serão atualizados e as novas questões serão adicionadas. As edições já criadas serão preservadas.',{title:`Importar ${data.length} questões?`,confirmLabel:'Importar questões'}))return;
  await rpc('cp_save_questions',{p_bank:editingBank,p_questions:data});await openBank(editingBank);
  }finally{e.target.value=''}
 });
@@ -91,4 +91,5 @@ $('bank-export').onclick=()=>{
 };
 // Consulta apenas o campeonato selecionado; trocar de disciplina interrompe as consultas da edição anterior.
 startPolling=function(){if(pollingId===null)pollingId=setInterval(()=>{if(!busy&&editionId)refresh().catch(error)},2500)};
+window.ChampionsExperience.init();
 init();

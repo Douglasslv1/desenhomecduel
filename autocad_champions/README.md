@@ -1,6 +1,6 @@
 # Champions — plataforma de campeonatos por disciplina
 
-**Guia atual: ATUALIZACAO_MULTIDISCIPLINAS.md.** A versão local agora inclui disciplinas, bancos versionados, campeonatos independentes, permissões por professor e entrada de estudantes por código. Para atualizar, execute platform-multidisciplines.sql com a edição antiga encerrada e publique juntos index.html, app.js, platform.js e platform.css. O pacote publicacao-champions.zip contém somente esses quatro arquivos. Não execute os SQLs antigos depois da migração da plataforma. Os detalhes abaixo descrevem versões anteriores e servem apenas como histórico.
+**Guia atual: ATUALIZACAO_MULTIDISCIPLINAS.md.** A versão local agora inclui disciplinas, bancos versionados, campeonatos independentes, permissões por professor e entrada de estudantes por código. Para atualizar, execute platform-multidisciplines.sql com a edição antiga encerrada e publique juntos index.html, app.js, platform.js, experience.js e platform.css. O pacote publicacao-champions.zip contém somente esses cinco arquivos. Não execute os SQLs antigos depois da migração da plataforma. Os detalhes abaixo descrevem versões anteriores e servem apenas como histórico.
 
 Os bancos de Desenho Mecânico são importados da instância atual; ADS fica com banco vazio aguardando as questões. Alterações de perguntas passam a ser feitas pelo painel de cada banco, mantendo as edições existentes intactas.
 

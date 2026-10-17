@@ -18,7 +18,7 @@
 1. Faça uma cópia de segurança do banco e guarde os arquivos atuais da página. A migração altera as funções acessíveis pelo navegador e deve ser publicada junto com a página nova.
 2. Encerre ou arquive a edição atual. A migração recusa a atualização enquanto o motor antigo estiver em nivelamento ou mata-mata.
 3. Execute **platform-multidisciplines.sql** completo no SQL Editor do Supabase. Os pré-requisitos são o schema e competition-v2.sql já aplicados. Se quiser importar as 55 perguntas agora, aplique questions-approved.sql antes da migração.
-4. Publique juntos **index.html**, **app.js**, **platform.js** e **platform.css** na Vercel. O pacote publicacao-champions.zip contém somente esses quatro arquivos; se usar upload manual, extraia o conteúdo na raiz da publicação.
+4. Publique juntos **index.html**, **app.js**, **platform.js**, **experience.js** e **platform.css** na Vercel. O pacote publicacao-champions.zip contém somente esses cinco arquivos; se usar upload manual, extraia o conteúdo na raiz da publicação.
 5. Atualize a página do professor em `?professor=true`, entre com a mesma conta e escolha uma disciplina.
 6. Confira o banco importado, crie uma edição de teste e use **Link dos estudantes** para cadastrar os participantes fictícios. Não inicie o nivelamento antes de todos estarem prontos.
 

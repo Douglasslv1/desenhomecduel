@@ -3,6 +3,7 @@ const elements=new Map();
 const el=id=>{if(!elements.has(id))elements.set(id,{hidden:false,disabled:false,textContent:'',innerHTML:'',classList:{toggle:()=>{}}});return elements.get(id)};
 let result={admin:true,registered:true,started:true,players:[],matches:[]},calls=[],confirmed=true,fail=false;
 const context=vm.createContext({window:{supabase:{createClient:()=>({})}},location:{search:'?professor=true'},URLSearchParams,document:{getElementById:el,addEventListener:()=>{}},console,confirm:()=>confirmed});
+context.window.ChampionsExperience={confirm:async()=>({confirmed}),onState:()=>{}};
 vm.runInContext(fs.readFileSync('app.js','utf8').replace(/init\(\);\s*$/,''),context);
 context.mockRpc=async fn=>{calls.push(fn);if(fn==='cp_archive'){if(fail)throw Error('Falha de teste');result={...result,edition:{archived:true}};return null}return result};
 vm.runInContext('rpc=mockRpc',context);

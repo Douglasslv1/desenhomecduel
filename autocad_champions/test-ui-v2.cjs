@@ -12,6 +12,7 @@ function environment(teacher=false){
  const ctx=vm.createContext({URLSearchParams,location:{search:teacher?'?professor=true':''},performance:{now:()=>clock.now},
   console:{error:()=>{}},document:{getElementById:element,addEventListener:(event,handler)=>events.set(event,handler),body:{classList:{toggle:()=>{}}}},
   window:{supabase:{createClient:()=>({})}},setInterval:fn=>{intervals.push(fn);return intervals.length},setTimeout:()=>{},confirm:()=>true,prompt:()=> 'Uso de ajuda externa'});
+ ctx.window.ChampionsExperience={confirm:async options=>({confirmed:ctx.confirm(),value:options.input?ctx.prompt():''}),onState:()=>{}};
  vm.runInContext(source,ctx);ctx.mockRpc=async(name,args)=>{calls.push({name,args});return name==='ac_state'?response:{accepted:false,expired:true}};vm.runInContext('rpc=mockRpc',ctx);
  return {ctx,element,calls,intervals,events,clock,setState:s=>{response=s}};
 }

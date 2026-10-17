@@ -1,9 +1,18 @@
+# Champions — plataforma de campeonatos por disciplina
+
+**Guia atual: ATUALIZACAO_MULTIDISCIPLINAS.md.** A versão local agora inclui disciplinas, bancos versionados, campeonatos independentes, permissões por professor e entrada de estudantes por código. Para atualizar, execute platform-multidisciplines.sql com a edição antiga encerrada e publique juntos index.html, app.js, platform.js e platform.css. O pacote publicacao-champions.zip contém somente esses quatro arquivos. Não execute os SQLs antigos depois da migração da plataforma. Os detalhes abaixo descrevem versões anteriores e servem apenas como histórico.
+
+Os bancos de Desenho Mecânico são importados da instância atual; ADS fica com banco vazio aguardando as questões. Alterações de perguntas passam a ser feitas pelo painel de cada banco, mantendo as edições existentes intactas.
+
+Os testes novos são test-platform.cjs e test-platform-ui.cjs. O plano retomado está em PLANO_PLATAFORMA_MULTIDISCIPLINAS.md.
+
+---
 # AutoCAD Champions — implantação
 > Atualização atual: o campeonato agora tem nivelamento, mata-mata por desempenho, desclassificação pelo professor e 90 segundos por questão. Consulte **ATUALIZACAO_NIVELAMENTO.md** e aplique **competition-v2.sql** após o schema. Não aplique os arquivos antigos de correção depois dessa migração.
 
 ## O que foi corrigido
 - Sorteio de chaves eliminatórias para 4+ participantes, inclusive números ímpares, com avanço automático (bye).
-- 10 questões iguais para cada dupla, escolhidas no servidor entre 40; 10 novas por duelo.
+- 10 questões iguais para cada dupla, sorteadas no servidor a partir do banco disponível.
 - Pontuação registrada e validada no banco, sem enviar o gabarito ao navegador.
 - Classificação automática, semifinais, final, terceiro lugar e pódio.
 - Persistência de progresso e retomada após atualizar a página.
@@ -46,3 +55,15 @@
 - O botão “Modo projeção” recolhe cabeçalho, lista, controles e pódio para destacar a chave; use “Sair da projeção” ou Escape para voltar. Continua atualizando a cada 2,5 segundos.
 - Republique apenas `index.html` e `app.js`. Esta alteração não exige SQL nem reinício do campeonato.
 - `preview-26.html` mostra a versão compacta com dados simulados. A visualização local pelo navegador automatizado não está disponível nesta sessão.
+
+## Seleção de questões aprovada em 17 de outubro de 2026
+
+O arquivo `questions.sql` preserva as 40 perguntas originais. `novas-questoes.json` contém somente as 15 novas perguntas aprovadas, com sua numeração original: 41, 42, 43, 44, 45, 47, 54, 55, 56, 58, 62, 63, 64, 67 e 80. As outras 25 foram retiradas da seleção. Na questão 47, o gabarito é ARRAY.
+
+Execute `questions-approved.sql` no Supabase, após `competition-v2.sql`, com inscrições abertas ou uma edição encerrada. O banco passa de 40 para 55 questões, sem alterar as originais. Não é necessário republicar a página. O arquivo pode ser executado novamente sem duplicar perguntas.
+
+`node test-approved-questions.cjs` confere a seleção, os gabaritos, a preservação das originais, a repetição da atualização e o bloqueio durante uma competição em andamento. Os PDFs anteriores com 40 questões propostas são documentos históricos de revisão; a seleção vigente é o JSON de 15 questões.
+
+## Ampliação futura
+
+A proposta de plataforma para várias disciplinas está registrada em `PLANO_PLATAFORMA_MULTIDISCIPLINAS.md`. O desenvolvimento dessa ampliação ficou para uma próxima etapa.

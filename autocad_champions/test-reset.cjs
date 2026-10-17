@@ -4,14 +4,14 @@ const el=id=>{if(!elements.has(id))elements.set(id,{hidden:false,disabled:false,
 let result={admin:true,registered:true,started:true,players:[],matches:[]},calls=[],confirmed=true,fail=false;
 const context=vm.createContext({window:{supabase:{createClient:()=>({})}},location:{search:'?professor=true'},URLSearchParams,document:{getElementById:el,addEventListener:()=>{}},console,confirm:()=>confirmed});
 vm.runInContext(fs.readFileSync('app.js','utf8').replace(/init\(\);\s*$/,''),context);
-context.mockRpc=async fn=>{calls.push(fn);if(fn==='ac_reset'){if(fail)throw Error('Falha de teste');result={...result,started:false};return 'archive-id'}return result};
+context.mockRpc=async fn=>{calls.push(fn);if(fn==='cp_archive'){if(fail)throw Error('Falha de teste');result={...result,edition:{archived:true}};return null}return result};
 vm.runInContext('rpc=mockRpc',context);
 (async()=>{
  await vm.runInContext('refresh()',context);
  assert.equal(el('reset').hidden,false);
- confirmed=false;await el('reset').onclick();assert.equal(calls.includes('ac_reset'),false);
- confirmed=true;await el('reset').onclick();assert.equal(result.started,false);assert.equal(el('reset').hidden,true);assert.equal(el('reset').disabled,false);
- result={...result,started:true};fail=true;await vm.runInContext('refresh()',context);await el('reset').onclick();assert.equal(el('message').textContent,'Falha de teste');assert.equal(el('reset').disabled,false);
+ confirmed=false;await el('reset').onclick();assert.equal(calls.includes('cp_archive'),false);
+ confirmed=true;await el('reset').onclick();assert.equal(result.edition.archived,true);assert.equal(el('reset').hidden,true);assert.equal(el('reset').disabled,false);
+ result={...result,started:true,edition:{archived:false}};fail=true;await vm.runInContext('refresh()',context);await el('reset').onclick();assert.equal(el('message').textContent,'Falha de teste');assert.equal(el('reset').disabled,false);
  const student=vm.createContext({window:{supabase:{createClient:()=>({})}},location:{search:''},URLSearchParams,document:{getElementById:el,addEventListener:()=>{}},console});
  vm.runInContext(fs.readFileSync('app.js','utf8').replace(/init\(\);\s*$/,''),student);
  result={registered:false,started:true};student.mockRpc=async()=>result;vm.runInContext('rpc=mockRpc',student);

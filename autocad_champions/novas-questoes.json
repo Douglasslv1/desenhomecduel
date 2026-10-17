@@ -1,42 +1,197 @@
 [
-  {"id":41,"question":"Uma placa tem largura total de 80 mm. Um furo deve ficar centralizado nessa largura. Qual deve ser a distância do centro do furo a cada uma das duas bordas laterais?","options":["20 mm","40 mm","60 mm","80 mm","160 mm"],"correct":"40 mm","why":"O centro divide a largura em duas partes iguais: 80 ÷ 2 = 40 mm."},
-  {"id":42,"question":"Uma placa retangular tem 100 mm de comprimento e 60 mm de largura. Você precisa criar um contorno interno a 5 mm de todas as bordas. Qual combinação está correta?","options":["OFFSET de 5 mm para dentro; contorno de 90 × 50 mm","OFFSET de 5 mm para dentro; contorno de 95 × 55 mm","SCALE com fator 0,5; contorno de 50 × 30 mm","MOVE de 5 mm; contorno de 100 × 60 mm","OFFSET de 10 mm para fora; contorno de 120 × 80 mm"],"correct":"OFFSET de 5 mm para dentro; contorno de 90 × 50 mm","why":"O recuo ocorre nas duas bordas de cada dimensão: subtraem-se 10 mm do comprimento e da largura."},
-  {"id":43,"question":"O centro de um furo deve ficar exatamente no meio de um segmento de 120 mm. Ao posicioná-lo no AutoCAD, qual recurso evita estimar esse ponto visualmente?","options":["OSNAP Endpoint","OSNAP Nearest","OSNAP Midpoint","Zoom Extents","Alterar a espessura da linha"],"correct":"OSNAP Midpoint","why":"Midpoint localiza o ponto médio exato do segmento."},
-  {"id":44,"question":"Você desenhou a metade esquerda de uma peça simétrica e quer gerar a metade direita, mantendo a original. Qual procedimento é adequado?","options":["Usar MIRROR com o eixo central e manter os objetos de origem","Usar MOVE e apagar a metade esquerda","Usar SCALE com fator 2","Usar TRIM no eixo central","Usar ROTATE com qualquer ponto-base"],"correct":"Usar MIRROR com o eixo central e manter os objetos de origem","why":"O espelhamento reproduz a geometria do outro lado do eixo indicado."},
-  {"id":45,"question":"Uma linha horizontal ultrapassou o contorno externo de uma peça. Apenas o trecho que ficou para fora deve desaparecer. Qual ação resolve o problema?","options":["Apagar a linha inteira com ERASE","Usar EXTEND para alongá-la","Usar TRIM com o contorno como limite","Usar OFFSET para duplicá-la","Usar JOIN com a linha de cota"],"correct":"Usar TRIM com o contorno como limite","why":"TRIM permite retirar o excedente sem eliminar o restante da linha."},
-  {"id":46,"question":"Um segmento parou 8 mm antes de uma aresta que deveria alcançar. A direção do segmento está correta. Qual comando permite prolongá-lo até essa aresta?","options":["FILLET","OFFSET","MIRROR","EXTEND","EXPLODE"],"correct":"EXTEND","why":"EXTEND prolonga o objeto até o limite escolhido."},
-  {"id":47,"question":"Você precisa distribuir seis furos iguais, com espaçamento angular uniforme, ao redor do centro de um disco. Qual recurso é mais apropriado?","options":["Matriz retangular","Matriz polar com seis elementos ao redor do centro","OFFSET com seis distâncias diferentes","SCALE com fator 6","TRIM aplicado aos seis círculos"],"correct":"Matriz polar com seis elementos ao redor do centro","why":"Uma matriz polar distribui os elementos em torno de um ponto central."},
-  {"id":48,"question":"Uma chapa precisa de 12 furos organizados em três linhas e quatro colunas, com espaçamento regular. Qual recurso facilita essa distribuição?","options":["MIRROR em um eixo inclinado","Matriz polar com 12 elementos","Matriz retangular com três linhas e quatro colunas","ROTATE com ângulo de 12 graus","FILLET com raio 12"],"correct":"Matriz retangular com três linhas e quatro colunas","why":"A matriz retangular organiza cópias por linhas e colunas."},
-  {"id":49,"question":"Uma placa de 80 × 40 mm deve ser substituída por uma versão geometricamente semelhante de 120 × 60 mm. Qual fator deve ser usado no comando SCALE?","options":["0,5","0,75","1,25","1,5","2"],"correct":"1,5","why":"As duas dimensões aumentam na mesma proporção: 120 ÷ 80 = 60 ÷ 40 = 1,5."},
-  {"id":50,"question":"Uma peça foi desenhada corretamente em tamanho real no Model Space. Você precisa apenas imprimi-la na escala 1:2. O que deve fazer?","options":["Reduzir todas as linhas pela metade no Model Space","Substituir as cotas por valores divididos por dois","Configurar a viewport ou a impressão para a escala 1:2","Mover a peça para perto da origem","Espelhar a peça antes de imprimir"],"correct":"Configurar a viewport ou a impressão para a escala 1:2","why":"A escala de saída controla o tamanho impresso, mantendo a geometria em tamanho real."},
-  {"id":51,"question":"Uma aresta mede 150 mm na peça real. Com impressão correta na escala 1:3, quanto essa aresta deve medir no papel?","options":["25 mm","50 mm","100 mm","150 mm","450 mm"],"correct":"50 mm","why":"Na escala 1:3, a medida impressa corresponde à medida real dividida por três."},
-  {"id":52,"question":"A distância real entre dois centros é 80 mm, e o desenho está sendo impresso na escala 1:2. Qual valor deve aparecer na cota que informa essa distância?","options":["40 mm","160 mm","2 mm","80 mm","1 mm"],"correct":"80 mm","why":"A cota informa a dimensão real da peça, independentemente da escala de impressão."},
-  {"id":53,"question":"Ao editar o contorno de uma peça, você seleciona acidentalmente as cotas com frequência. Quer mantê-las visíveis, mas protegidas contra alterações. O que fazer?","options":["Apagar todas as cotas","Desligar o layer das cotas","Bloquear o layer das cotas","Mover as cotas para o mesmo layer do contorno","Alterar somente a cor das cotas"],"correct":"Bloquear o layer das cotas","why":"O bloqueio mantém os objetos visíveis e impede sua edição normal."},
-  {"id":54,"question":"As hachuras dificultam a seleção de detalhes internos. Você quer ocultá-las temporariamente, sem apagá-las. Qual organização facilita essa tarefa?","options":["Colocar hachuras em layer próprio e desligá-lo temporariamente","Colocar todos os objetos no Layer 0","Transformar cada hachura em uma cota","Aumentar a espessura dos contornos","Reduzir a escala de todo o desenho"],"correct":"Colocar hachuras em layer próprio e desligá-lo temporariamente","why":"Um layer separado permite controlar a visibilidade das hachuras sem excluir seu conteúdo."},
-  {"id":55,"question":"Você precisa representar um furo de diâmetro 12 mm usando o comando CIRCLE pela opção de raio. Qual valor deve informar?","options":["3 mm","6 mm","12 mm","24 mm","36 mm"],"correct":"6 mm","why":"O raio corresponde à metade do diâmetro: 12 ÷ 2 = 6 mm."},
-  {"id":56,"question":"Um arredondamento deve unir duas linhas com raio de 4 mm. Antes de selecionar as linhas no FILLET, qual valor precisa ser configurado?","options":["Diâmetro de 4 mm","Ângulo de 4 graus","Raio de 4 mm","Escala de 4:1","Espessura de 4 mm no layer"],"correct":"Raio de 4 mm","why":"FILLET utiliza o raio configurado para criar o arco de concordância."},
-  {"id":57,"question":"O desenho pede um chanfro com recuo de 3 mm em cada uma de duas arestas perpendiculares. Qual configuração corresponde a esse pedido?","options":["FILLET com raio 3 mm","CHAMFER com distâncias 3 mm e 3 mm","OFFSET de 6 mm","ROTATE de 3 graus","SCALE com fator 3"],"correct":"CHAMFER com distâncias 3 mm e 3 mm","why":"As duas distâncias do CHAMFER definem os recuos do chanfro nas arestas selecionadas."},
-  {"id":58,"question":"Uma linha deve partir de um ponto e permanecer exatamente horizontal durante o desenho. Qual recurso ajuda a restringir o movimento às direções horizontal e vertical do UCS atual?","options":["Modo Ortho","Hachura sólida","Layer bloqueado","Zoom Window","Estilo visual Realistic"],"correct":"Modo Ortho","why":"Ortho restringe o movimento às direções ortogonais do sistema de coordenadas atual."},
-  {"id":59,"question":"Um segmento começa em um ponto qualquer e deve avançar 50 unidades na direção positiva de X, sem variar em Y. Em coordenadas cartesianas relativas 2D, o que digitar para o próximo ponto?","options":["@0,50","@50,50","@-50,0","@50,0","0,0"],"correct":"@50,0","why":"O símbolo @ indica deslocamento relativo ao ponto anterior: 50 em X e zero em Y."},
-  {"id":60,"question":"A vista frontal de uma peça mostra largura de 70 mm e altura de 40 mm. A vista superior deve estar alinhada com ela. Qual dimensão deve coincidir entre essas duas vistas?","options":["A altura de 40 mm","A profundidade, obrigatoriamente 40 mm","A largura de 70 mm","O raio de todos os furos","A espessura de todas as linhas"],"correct":"A largura de 70 mm","why":"Nas vistas frontal e superior alinhadas, a largura da peça é a dimensão comum."},
-  {"id":61,"question":"Um furo interno não pode ser visto diretamente na vista frontal escolhida, e essa vista será apresentada sem corte. Como representar suas arestas ocultas?","options":["Com linhas de cota","Com linhas tracejadas","Com hachura em toda a peça","Com linhas de centro no lugar de todas as arestas","Omitindo o furo de todas as vistas"],"correct":"Com linhas tracejadas","why":"As linhas tracejadas indicam arestas não visíveis na vista considerada."},
-  {"id":62,"question":"Uma cavidade interna gera muitas linhas ocultas e fica difícil de entender nas vistas externas. Qual recurso de representação pode tornar o interior mais claro?","options":["Aumentar apenas a cor de fundo","Retirar todas as cotas","Apresentar uma vista em corte que atravesse a cavidade","Desenhar a peça em escala aleatória","Duplicar a mesma vista externa"],"correct":"Apresentar uma vista em corte que atravesse a cavidade","why":"O corte revela o interior atravessado pelo plano escolhido e facilita sua interpretação."},
-  {"id":63,"question":"Uma vista em corte atravessa uma peça com um furo vazio. Qual parte deve receber hachura nessa seção?","options":["Somente o espaço vazio do furo","Toda a folha de desenho","Apenas as linhas de cota","O material sólido interceptado pelo plano de corte","Somente a linha de centro do furo"],"correct":"O material sólido interceptado pelo plano de corte","why":"A hachura identifica o material cortado; o vazio do furo não é material."},
-  {"id":64,"question":"Uma placa mede 100 mm de comprimento. O centro de um furo fica a 25 mm da borda esquerda. Qual é a distância desse centro à borda direita?","options":["25 mm","50 mm","75 mm","100 mm","125 mm"],"correct":"75 mm","why":"A distância restante é 100 - 25 = 75 mm."},
-  {"id":65,"question":"A posição horizontal de um furo está cotada, mas falta sua posição vertical. Para fabricar a placa sem adivinhar onde furar, qual informação deve ser acrescentada?","options":["Somente a cor do círculo","Uma distância vertical do centro a uma referência definida","O nome do computador usado","Uma segunda cota repetindo a posição horizontal","Somente a escala de impressão"],"correct":"Uma distância vertical do centro a uma referência definida","why":"A posição do centro no plano exige referências suficientes nas duas direções."},
-  {"id":66,"question":"O contorno externo de uma peça está formado por vários segmentos separados. Você quer que ele se comporte como uma única polilinha. Os segmentos são coplanares e suas extremidades coincidem. Qual procedimento é adequado?","options":["PEDIT com a opção Join nos segmentos do contorno","OFFSET em cada linha, com qualquer distância","MIRROR usando uma linha de cota","ERASE em metade dos segmentos","SCALE com fator zero"],"correct":"PEDIT com a opção Join nos segmentos do contorno","why":"PEDIT permite converter e unir segmentos compatíveis em uma polilinha."},
-  {"id":67,"question":"Um contorno parece fechado, mas existe uma pequena abertura entre duas extremidades. Antes de aplicar uma hachura sem tolerância a aberturas, qual atitude é mais adequada?","options":["Trocar somente a cor da hachura","Fechar a abertura, fazendo as extremidades coincidirem","Imprimir antes de conferir o contorno","Duplicar todas as linhas","Reduzir o tamanho do cursor"],"correct":"Fechar a abertura, fazendo as extremidades coincidirem","why":"Um limite fechado permite reconhecer corretamente a região a ser hachurada."},
-  {"id":68,"question":"Você precisa confirmar se a distância entre dois pontos de uma peça é exatamente 35 mm. Qual comando permite medir essa distância diretamente?","options":["HATCH","MIRROR","DIST","CHAMFER","LAYER"],"correct":"DIST","why":"DIST informa a distância entre os pontos selecionados."},
-  {"id":69,"question":"Você vai iniciar um modelo 3D de um bloco retangular com comprimento, largura e altura definidos. Qual comando cria diretamente esse sólido básico?","options":["RECTANGLE","BOX","LINE","HATCH","DIMLINEAR"],"correct":"BOX","why":"BOX cria um sólido 3D em forma de bloco retangular."},
-  {"id":70,"question":"Uma chapa de formato irregular foi desenhada como uma polilinha plana e fechada. Você quer dar a ela 8 mm de altura usando o modo Solid. Qual operação é adequada?","options":["EXTRUDE com altura de 8 mm","OFFSET de 8 mm no contorno 2D","ZOOM com fator 8","TRIM em todas as arestas","MIRROR com eixo vertical"],"correct":"EXTRUDE com altura de 8 mm","why":"EXTRUDE em modo Solid pode transformar um perfil plano fechado em um sólido com a altura indicada."},
-  {"id":71,"question":"Ao usar EXTRUDE em uma única linha aberta, o aluno obtém uma superfície em vez de um bloco sólido. Qual é a explicação mais adequada?","options":["A cor da linha impede a criação de sólidos","Perfis abertos geram superfícies nessa extrusão","A altura precisa ser sempre maior que 100 mm","EXTRUDE só funciona com círculos","O desenho precisa estar na escala 1:2"],"correct":"Perfis abertos geram superfícies nessa extrusão","why":"Uma curva aberta extrudada forma uma superfície; para um sólido, use um perfil apropriado fechado e o modo correspondente."},
-  {"id":72,"question":"Você quer criar um pino cilíndrico maciço com diâmetro de 20 mm e altura de 30 mm. Ao usar CYLINDER pela opção de raio, quais valores informar?","options":["Raio 20 mm e altura 30 mm","Raio 10 mm e altura 15 mm","Raio 10 mm e altura 30 mm","Raio 30 mm e altura 10 mm","Raio 40 mm e altura 30 mm"],"correct":"Raio 10 mm e altura 30 mm","why":"O raio é metade do diâmetro; a altura permanece 30 mm."},
-  {"id":73,"question":"Um cilindro atravessa um bloco sólido e representa o volume de um furo passante. No comando SUBTRACT, em qual ordem devem ser selecionados os objetos?","options":["Primeiro o cilindro a remover; depois o bloco a manter","Primeiro o bloco a manter; confirmar; depois o cilindro a remover","Selecionar somente o bloco, sem indicar o cilindro","Selecionar somente o cilindro e usar UNION","Selecionar duas linhas de cota no lugar dos sólidos"],"correct":"Primeiro o bloco a manter; confirmar; depois o cilindro a remover","why":"SUBTRACT solicita primeiro os sólidos dos quais o volume será retirado e depois os sólidos que serão subtraídos."},
-  {"id":74,"question":"Dois blocos sólidos se sobrepõem e devem passar a formar um único objeto sólido composto. Qual comando é apropriado?","options":["SUBTRACT","EXPLODE","UNION","OFFSET","TRIM"],"correct":"UNION","why":"UNION combina os sólidos selecionados em um sólido composto."},
-  {"id":75,"question":"Dois sólidos se sobrepõem. Você quer manter somente o volume que pertence simultaneamente aos dois. Qual comando deve usar?","options":["COPY","UNION","MIRROR","INTERSECT","EXTEND"],"correct":"INTERSECT","why":"INTERSECT conserva o volume comum aos sólidos selecionados."},
-  {"id":76,"question":"Você desenhou um perfil plano fechado que representa metade da seção longitudinal de uma peça de revolução, sem cruzar o eixo. Qual operação pode gerar o sólido ao girar esse perfil 360 graus ao redor do eixo?","options":["ROTATE aplicado apenas ao desenho 2D","REVOLVE em modo Solid","OFFSET com distância de 360 mm","HATCH com padrão circular","SCALE com fator 360"],"correct":"REVOLVE em modo Solid","why":"REVOLVE cria a geometria de revolução a partir do perfil e do eixo indicados."},
-  {"id":77,"question":"Você quer observar a parte de trás de uma peça 3D sem alterar a orientação real do modelo no desenho. Qual recurso deve usar?","options":["ROTATE3D para mudar a peça de posição","MOVE para deslocar o sólido","3DORBIT para mudar o ponto de vista","SCALE para reduzir o sólido","SUBTRACT para retirar a face da frente"],"correct":"3DORBIT para mudar o ponto de vista","why":"3DORBIT muda a visualização, sem transformar a geometria do modelo."},
-  {"id":78,"question":"Para desenhar um perfil em uma face plana inclinada de uma peça 3D, você quer que o plano XY de trabalho coincida com essa face. Qual recurso deve ajustar?","options":["A cor de fundo","O UCS, alinhando-o à face desejada","A escala da impressora","O diâmetro do cursor","O número de layers do arquivo"],"correct":"O UCS, alinhando-o à face desejada","why":"O UCS permite orientar o plano de trabalho para facilitar o desenho sobre a face."},
-  {"id":79,"question":"No UCS World, um bloco tem sua base no plano XY em Z = 0 e sua face superior em Z = 25 mm. Qual é a altura do bloco na direção Z?","options":["0 mm","12,5 mm","25 mm","50 mm","Não é possível saber pela diferença de Z"],"correct":"25 mm","why":"A altura é a diferença entre as coordenadas Z superior e inferior: 25 - 0 = 25 mm."},
-  {"id":80,"question":"Um modelo 3D está sendo exibido apenas por linhas, dificultando distinguir suas faces. Você quer uma visualização sombreada, sem alterar suas dimensões. O que fazer?","options":["Aumentar todas as dimensões com SCALE","Converter o sólido em linhas com EXPLODE","Trocar para um estilo visual sombreado, como Shaded","Aplicar uma cota em cada face","Apagar as arestas que aparecem ao fundo"],"correct":"Trocar para um estilo visual sombreado, como Shaded","why":"O estilo visual muda a apresentação do modelo, mantendo sua geometria."}
+  {
+    "id": 41,
+    "question": "Uma placa tem largura total de 80 mm. Um furo deve ficar centralizado nessa largura. Qual deve ser a distância do centro do furo a cada uma das duas bordas laterais?",
+    "options": [
+      "20 mm",
+      "40 mm",
+      "60 mm",
+      "80 mm",
+      "160 mm"
+    ],
+    "correct": "40 mm",
+    "why": "O centro divide a largura em duas partes iguais: 80 ÷ 2 = 40 mm."
+  },
+  {
+    "id": 42,
+    "question": "Uma placa retangular tem 100 mm de comprimento e 60 mm de largura. Você precisa criar um contorno interno a 5 mm de todas as bordas. Qual combinação está correta?",
+    "options": [
+      "OFFSET de 5 mm para dentro; contorno de 90 × 50 mm",
+      "OFFSET de 5 mm para dentro; contorno de 95 × 55 mm",
+      "SCALE com fator 0,5; contorno de 50 × 30 mm",
+      "MOVE de 5 mm; contorno de 100 × 60 mm",
+      "OFFSET de 10 mm para fora; contorno de 120 × 80 mm"
+    ],
+    "correct": "OFFSET de 5 mm para dentro; contorno de 90 × 50 mm",
+    "why": "O recuo ocorre nas duas bordas de cada dimensão: subtraem-se 10 mm do comprimento e da largura."
+  },
+  {
+    "id": 43,
+    "question": "O centro de um furo deve ficar exatamente no meio de um segmento de 120 mm. Ao posicioná-lo no AutoCAD, qual recurso evita estimar esse ponto visualmente?",
+    "options": [
+      "OSNAP Endpoint",
+      "OSNAP Nearest",
+      "OSNAP Midpoint",
+      "Zoom Extents",
+      "Alterar a espessura da linha"
+    ],
+    "correct": "OSNAP Midpoint",
+    "why": "Midpoint localiza o ponto médio exato do segmento."
+  },
+  {
+    "id": 44,
+    "question": "Você desenhou a metade esquerda de uma peça simétrica e quer gerar a metade direita, mantendo a original. Qual procedimento é adequado?",
+    "options": [
+      "Usar MIRROR com o eixo central e manter os objetos de origem",
+      "Usar MOVE e apagar a metade esquerda",
+      "Usar SCALE com fator 2",
+      "Usar TRIM no eixo central",
+      "Usar ROTATE com qualquer ponto-base"
+    ],
+    "correct": "Usar MIRROR com o eixo central e manter os objetos de origem",
+    "why": "O espelhamento reproduz a geometria do outro lado do eixo indicado."
+  },
+  {
+    "id": 45,
+    "question": "Uma linha horizontal ultrapassou o contorno externo de uma peça. Apenas o trecho que ficou para fora deve desaparecer. Qual ação resolve o problema?",
+    "options": [
+      "Apagar a linha inteira com ERASE",
+      "Usar EXTEND para alongá-la",
+      "Usar TRIM com o contorno como limite",
+      "Usar OFFSET para duplicá-la",
+      "Usar JOIN com a linha de cota"
+    ],
+    "correct": "Usar TRIM com o contorno como limite",
+    "why": "TRIM permite retirar o excedente sem eliminar o restante da linha."
+  },
+  {
+    "id": 47,
+    "question": "Você precisa distribuir seis furos iguais, com espaçamento angular uniforme, ao redor do centro de um disco. Qual comando permite criar essas repetições de forma organizada?",
+    "options": [
+      "MIRROR",
+      "ARRAY",
+      "OFFSET",
+      "SCALE",
+      "TRIM"
+    ],
+    "correct": "ARRAY",
+    "why": "ARRAY replica objetos em arranjos circulares (opção Polar) ou retangulares. Para os furos ao redor do centro do disco, utiliza-se a opção Polar."
+  },
+  {
+    "id": 54,
+    "question": "As hachuras dificultam a seleção de detalhes internos. Você quer ocultá-las temporariamente, sem apagá-las. Qual organização facilita essa tarefa?",
+    "options": [
+      "Colocar hachuras em layer próprio e desligá-lo temporariamente",
+      "Colocar todos os objetos no Layer 0",
+      "Transformar cada hachura em uma cota",
+      "Aumentar a espessura dos contornos",
+      "Reduzir a escala de todo o desenho"
+    ],
+    "correct": "Colocar hachuras em layer próprio e desligá-lo temporariamente",
+    "why": "Um layer separado permite controlar a visibilidade das hachuras sem excluir seu conteúdo."
+  },
+  {
+    "id": 55,
+    "question": "Você precisa representar um furo de diâmetro 12 mm usando o comando CIRCLE pela opção de raio. Qual valor deve informar?",
+    "options": [
+      "3 mm",
+      "6 mm",
+      "12 mm",
+      "24 mm",
+      "36 mm"
+    ],
+    "correct": "6 mm",
+    "why": "O raio corresponde à metade do diâmetro: 12 ÷ 2 = 6 mm."
+  },
+  {
+    "id": 56,
+    "question": "Um arredondamento deve unir duas linhas com raio de 4 mm. Antes de selecionar as linhas no FILLET, qual valor precisa ser configurado?",
+    "options": [
+      "Diâmetro de 4 mm",
+      "Ângulo de 4 graus",
+      "Raio de 4 mm",
+      "Escala de 4:1",
+      "Espessura de 4 mm no layer"
+    ],
+    "correct": "Raio de 4 mm",
+    "why": "FILLET utiliza o raio configurado para criar o arco de concordância."
+  },
+  {
+    "id": 58,
+    "question": "Uma linha deve partir de um ponto e permanecer exatamente horizontal durante o desenho. Qual recurso ajuda a restringir o movimento às direções horizontal e vertical do UCS atual?",
+    "options": [
+      "Modo Ortho",
+      "Hachura sólida",
+      "Layer bloqueado",
+      "Zoom Window",
+      "Estilo visual Realistic"
+    ],
+    "correct": "Modo Ortho",
+    "why": "Ortho restringe o movimento às direções ortogonais do sistema de coordenadas atual."
+  },
+  {
+    "id": 62,
+    "question": "Uma cavidade interna gera muitas linhas ocultas e fica difícil de entender nas vistas externas. Qual recurso de representação pode tornar o interior mais claro?",
+    "options": [
+      "Aumentar apenas a cor de fundo",
+      "Retirar todas as cotas",
+      "Apresentar uma vista em corte que atravesse a cavidade",
+      "Desenhar a peça em escala aleatória",
+      "Duplicar a mesma vista externa"
+    ],
+    "correct": "Apresentar uma vista em corte que atravesse a cavidade",
+    "why": "O corte revela o interior atravessado pelo plano escolhido e facilita sua interpretação."
+  },
+  {
+    "id": 63,
+    "question": "Uma vista em corte atravessa uma peça com um furo vazio. Qual parte deve receber hachura nessa seção?",
+    "options": [
+      "Somente o espaço vazio do furo",
+      "Toda a folha de desenho",
+      "Apenas as linhas de cota",
+      "O material sólido interceptado pelo plano de corte",
+      "Somente a linha de centro do furo"
+    ],
+    "correct": "O material sólido interceptado pelo plano de corte",
+    "why": "A hachura identifica o material cortado; o vazio do furo não é material."
+  },
+  {
+    "id": 64,
+    "question": "Uma placa mede 100 mm de comprimento. O centro de um furo fica a 25 mm da borda esquerda. Qual é a distância desse centro à borda direita?",
+    "options": [
+      "25 mm",
+      "50 mm",
+      "75 mm",
+      "100 mm",
+      "125 mm"
+    ],
+    "correct": "75 mm",
+    "why": "A distância restante é 100 - 25 = 75 mm."
+  },
+  {
+    "id": 67,
+    "question": "Um contorno parece fechado, mas existe uma pequena abertura entre duas extremidades. Antes de aplicar uma hachura sem tolerância a aberturas, qual atitude é mais adequada?",
+    "options": [
+      "Trocar somente a cor da hachura",
+      "Fechar a abertura, fazendo as extremidades coincidirem",
+      "Imprimir antes de conferir o contorno",
+      "Duplicar todas as linhas",
+      "Reduzir o tamanho do cursor"
+    ],
+    "correct": "Fechar a abertura, fazendo as extremidades coincidirem",
+    "why": "Um limite fechado permite reconhecer corretamente a região a ser hachurada."
+  },
+  {
+    "id": 80,
+    "question": "Um modelo 3D está sendo exibido apenas por linhas, dificultando distinguir suas faces. Você quer uma visualização sombreada, sem alterar suas dimensões. O que fazer?",
+    "options": [
+      "Aumentar todas as dimensões com SCALE",
+      "Converter o sólido em linhas com EXPLODE",
+      "Trocar para um estilo visual sombreado, como Shaded",
+      "Aplicar uma cota em cada face",
+      "Apagar as arestas que aparecem ao fundo"
+    ],
+    "correct": "Trocar para um estilo visual sombreado, como Shaded",
+    "why": "O estilo visual muda a apresentação do modelo, mantendo sua geometria."
+  }
 ]

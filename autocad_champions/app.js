@@ -2,19 +2,26 @@ const SUPABASE_URL='https://neiohdvunvmgqznmyviz.supabase.co';
 const SUPABASE_KEY='sb_publishable_pl5_hDZ-ar6wMJAIVsfggw_svHxW3IZ';
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const teacher=new URLSearchParams(location.search).has('professor');
-let state=null,busy=false,pollingId=null,timerId=null,deadlineAt=0,lastExpiryRefresh=0,renderedPhase=null;
+let editionId=null;
+let state=null,busy=false,pollingId=null,timerId=null,deadlineAt=0,lastExpiryRefresh=0,renderedPhase=null,refreshVersion=0;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const show=id=>['login','waiting','quiz','teacher-login','teacher'].forEach(x=>$(x).hidden=x!==id);
+const show=id=>['login','waiting','quiz','teacher-login','teacher','portal','entry','bank-editor'].forEach(x=>$(x).hidden=x!==id);
 const error=e=>{console.error(e);$('message').textContent=e.message||String(e)};
-async function rpc(fn,args={}){const {data,error:e}=await db.rpc(fn,args);if(e)throw e;return data}
+async function rpc(fn,args={}){
+ const scoped=fn.startsWith('ac_')&&editionId;
+ if(fn.startsWith('ac_')&&!editionId)throw Error('Selecione um campeonato primeiro.');
+ const {data,error:e}=await db.rpc(scoped?'cp_rpc':fn,scoped?{p_edition:editionId,p_action:fn,p_args:args}:args);if(e)throw e;return data}
 function startPolling(){if(pollingId===null)pollingId=setInterval(()=>{if(!busy)refresh().catch(error)},2500)}
 async function init(){try{
  const {data:{session}}=await db.auth.getSession();
  if(teacher){if(!session||session.user.is_anonymous){show('teacher-login');return}}else if(!session){const {error:e}=await db.auth.signInAnonymously();if(e)throw e}
- await refresh();startPolling();
- }catch(e){error(e);if(teacher)show('teacher-login');else show('login')}}
-async function refresh(){state=await rpc('ac_state');$('message').textContent='';
+ await openPlatform();startPolling();
+ }catch(e){error(e);if(teacher)show('teacher-login');else show('entry')}}
+async function refresh(){const requestedEdition=editionId,version=++refreshVersion,next=await rpc('ac_state');
+ if(requestedEdition!==editionId||version!==refreshVersion)return;
+ state=next;$('message').textContent='';
+ if(state.edition){$('edition-title').textContent=`${state.edition.discipline} · ${state.edition.name}`;$('edition-context').hidden=false;$('edition-code').textContent=`Código: ${state.edition.code}`}
  deadlineAt=state.active?.deadline?performance.now()+Math.max(0,Date.parse(state.active.deadline)-Date.parse(state.server_now)):0;
  if(teacher){if(!state.admin){show('teacher-login');$('message').textContent='Esta conta não está autorizada como professor.';return}show('teacher');renderTeacher();return}
  if(!state.registered){show('login');$('join-btn').disabled=!!state.started;return}
@@ -23,27 +30,30 @@ async function refresh(){state=await rpc('ac_state');$('message').textContent=''
  show('quiz');renderQuiz();}
 function renderTeacher(){
  const players=state.players||[],matches=state.matches||[];
+ const archived=!!state.edition?.archived;
+ if(archived)players.forEach(p=>p.can_disqualify=false);
  if(renderedPhase!==state.phase){$('participants-details').open=!['knockout','finished'].includes(state.phase);renderedPhase=state.phase}
  $('teacher').classList.toggle('leveling-phase',state.phase==='leveling');
  $('count').textContent=`${players.length} inscritos`;
  $('roster').innerHTML=players.map(p=>`<div class="player-row"><span>${esc(p.name)}${p.disqualified?' · Desclassificado':''}</span><span class="muted">${p.level_score==null?'Aguardando nivelamento':`${p.level_score} acertos · ${Math.max(0,(p.level_answered||0)-p.level_score)} erros/tempo esgotado · ${p.level_answered||0}/10 respondidas${p.level_done?' · Concluído':''}`}</span>${p.can_disqualify?`<button type="button" class="disqualify" data-player="${esc(p.id)}">Desclassificar</button>`:p.disqualified?`<span class="muted" title="${esc(p.reason)}">${esc(p.reason)}</span>`:''}</div>`).join('')||'Nenhum estudante inscrito.';
- $('start').disabled=state.started||players.filter(p=>!p.disqualified).length<4||busy||state.api_version!==2;
+ $('start').disabled=archived||state.started||players.filter(p=>!p.disqualified).length<4||busy||state.api_version!==2;
  if(state.api_version!==2)$('message').textContent='Para iniciar uma nova edição, aplique competition-v2.sql no Supabase e atualize a página.';
  $('start').hidden=!!state.started;
  $('start').textContent='Iniciar nivelamento';
  $('knockout').hidden=state.phase!=='leveling';
- $('knockout').disabled=!state.leveling?.ready||busy;
+ $('knockout').disabled=!state.leveling?.ready||busy||archived;
  $('level-summary').hidden=state.phase!=='leveling';
  $('level-summary').textContent=state.phase==='leveling'?`${state.leveling?.done||0} de ${state.leveling?.total||0} participantes habilitados concluíram. Dez questões iguais para todos · 1min30s por questão. O mata-mata será organizado por acertos; tempo total desempata resultados iguais.`:'';
  const standard=matches.filter(m=>!m.third),rounds=[...new Set(standard.map(m=>m.round))].sort((a,b)=>a-b);
  const last=rounds.at(-1),final=standard.find(m=>m.round===last),third=matches.find(m=>m.third);
- $('reset').hidden=!state.started;
+ $('reset').hidden=archived;
+ $('reset').textContent='Arquivar esta edição';
  $('reset').disabled=busy;
  if(final?.winner&&third?.winner)$('start').textContent='Campeonato encerrado';
  const pending=standard.filter(m=>m.p1&&m.p2&&!m.winner);
  const current=pending.length?Math.min(...pending.map(m=>m.round)):null;
  const labels=r=>r===last?'Final':r===last-1?'Semifinais':r===last-2?'Quartas de final':r===last-3?'Oitavas de final':r===last-4?'Fase de 32':`Rodada ${r}`;
- const banner=!state.started?`⏳ Inscrições abertas · ${players.length} participantes inscritos`:
+ const banner=archived?'EDIÇÃO ARQUIVADA · Resultados preservados':!state.started?`⏳ Inscrições abertas · ${players.length} participantes inscritos`:
   state.phase==='leveling'?'📝 NIVELAMENTO · Todos respondem às mesmas dez questões':
   state.phase==='finished'||final?.winner&&third?.winner?'🏆 CAMPEONATO ENCERRADO':
   current!==null?`⚔ ${labels(current)} · ${pending.filter(m=>m.round===current).length} confronto(s) em andamento. Os classificados avançam automaticamente ao concluir as 10 perguntas.`:
@@ -114,14 +124,14 @@ async function handleDisqualification(e){
 $('roster').onclick=handleDisqualification;
 $('bracket').onclick=handleDisqualification;
 $('reset').onclick=async()=>{
- if(busy||!confirm('Arquivar este campeonato e abrir uma nova edição? Os participantes deverão se inscrever novamente. As perguntas e o acesso do professor serão mantidos.'))return;
+ if(busy||!confirm('Arquivar esta edição? Os resultados serão preservados e novas respostas serão bloqueadas. Você poderá criar outra edição na página da disciplina.'))return;
  busy=true;$('reset').disabled=true;
- try{await rpc('ac_reset');await refresh()}catch(e){error(e)}finally{busy=false;$('reset').disabled=false}
+ try{await rpc('cp_archive',{p_edition:editionId});await refresh()}catch(e){error(e)}finally{busy=false;$('reset').disabled=false}
 };
-$('teacher-form').onsubmit=async e=>{e.preventDefault();try{const {error:e}=await db.auth.signInWithPassword({email:$('email').value,password:$('password').value});if(e)throw e;await refresh();startPolling()}catch(e){error(e)}};
+$('teacher-form').onsubmit=async e=>{e.preventDefault();try{const {error:e}=await db.auth.signInWithPassword({email:$('email').value,password:$('password').value});if(e)throw e;await openPlatform();startPolling()}catch(e){error(e)}};
 $('logout').onclick=async()=>{await db.auth.signOut();location.reload()};
 function projection(enabled){document.body.classList.toggle('projection-mode',enabled);$('projection').setAttribute('aria-pressed',String(enabled))}
 $('projection').onclick=()=>projection(true);
 $('projection-exit').onclick=()=>projection(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')projection(false)});
-init();
+// platform.js instala os controles de disciplinas e então inicia a aplicação.

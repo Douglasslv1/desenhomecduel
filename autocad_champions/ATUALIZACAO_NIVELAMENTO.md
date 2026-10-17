@@ -8,9 +8,9 @@
 4. Publique novamente **index.html** e **app.js** juntos na Vercel.
 5. Teste com participantes fictícios antes de usar com a turma.
 
-As 40 perguntas existentes são mantidas. As novas questões de 41 a 80 continuam sendo uma proposta para revisão e não foram incluídas no banco.
+As 40 perguntas originais são mantidas. Em 17 de outubro de 2026, o professor aprovou 15 das questões propostas: 41, 42, 43, 44, 45, 47, 54, 55, 56, 58, 62, 63, 64, 67 e 80. A questão 47 usa ARRAY. Execute questions-approved.sql após competition-v2.sql para incluir somente essa seleção e ampliar o banco para 55 questões. A aplicação na instância depende da execução desse arquivo no Supabase.
 
-Para uma instalação nova, execute schema.sql, questions.sql e competition-v2.sql, nessa ordem. A configuração de autenticação e professor continua sendo a do README.
+Para uma instalação nova, execute schema.sql, questions.sql, competition-v2.sql e questions-approved.sql, nessa ordem. A configuração de autenticação e professor continua sendo a do README.
 
 ## Nivelamento e formação do mata-mata
 

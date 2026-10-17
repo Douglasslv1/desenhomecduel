@@ -7,3 +7,6 @@ output/
 *.docx
 *.json
 README.md
+*.md
+platform-sections.html
+preview-26.html

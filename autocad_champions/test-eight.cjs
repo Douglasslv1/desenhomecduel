@@ -11,7 +11,8 @@ async function request(route,body,token){
  const response=await fetch(url+route,{method:'POST',headers:{apikey:key,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(body),signal:AbortSignal.timeout(25000)});
  const result=await response.json();if(!response.ok)throw Error(`${route}: ${result.message||result.msg||result.error_description||JSON.stringify(result)}`);return result;
 }
-async function rpc(session,fn,args={}){return request('/rest/v1/rpc/'+fn,args,session.access_token)}
+let platformEdition=null;
+async function rpc(session,fn,args={}){return platformEdition&&fn.startsWith('ac_')?request('/rest/v1/rpc/cp_rpc',{p_edition:platformEdition,p_action:fn,p_args:args},session.access_token):request('/rest/v1/rpc/'+fn,args,session.access_token)}
 async function playV2(mode){
  const expected=mode==='level'?'leveling':'knockout';let submitted=0,expired=0;
  const delay=Math.min(10000,Math.max(0,Number(process.env.AC_TEST_STEP_MS)||0));
@@ -50,6 +51,11 @@ async function playV2(mode){
 }
 async function main(){
  for(const session of sessions){const refreshed=await request('/auth/v1/token?grant_type=refresh_token',{refresh_token:session.refresh_token});Object.assign(session,{access_token:refreshed.access_token,refresh_token:refreshed.refresh_token});save()}
+ if(process.env.AC_TEST_CODE){
+  if(!sessions.length){const auth=await request('/auth/v1/signup',{});sessions.push({name:`Teste${total===8?'':'26'} 01`,access_token:auth.access_token,refresh_token:auth.refresh_token});save()}
+  const edition=await request('/rest/v1/rpc/cp_resolve',{p_code:process.env.AC_TEST_CODE},sessions[0].access_token);platformEdition=edition.id;
+  console.log(`Campeonato selecionado: ${edition.discipline} · ${edition.name}`);
+ }
  const mode=process.argv[2]||'register';
  if(!['register','play','level'].includes(mode))throw Error('Escolha register, level ou play');
  if(mode!=='register'){

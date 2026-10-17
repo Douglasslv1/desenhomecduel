@@ -1,4 +1,5 @@
 # AutoCAD Champions — implantação
+> Atualização atual: o campeonato agora tem nivelamento, mata-mata por desempenho, desclassificação pelo professor e 90 segundos por questão. Consulte **ATUALIZACAO_NIVELAMENTO.md** e aplique **competition-v2.sql** após o schema. Não aplique os arquivos antigos de correção depois dessa migração.
 
 ## O que foi corrigido
 - Sorteio de chaves eliminatórias para 4+ participantes, inclusive números ímpares, com avanço automático (bye).
@@ -21,7 +22,7 @@
 ## Regras
 - Exige **4 participantes** para iniciar e definir 3 colocações.
 - Inscrições encerram após o início. O professor pode usar “Arquivar e abrir nova edição”, com confirmação. O campeonato anterior é arquivado no banco e os participantes devem se inscrever novamente.
-- Vence quem tiver mais acertos. Em empate, vence quem concluiu as 10 respostas em menor intervalo entre a primeira e a última; se persistir, desempate aleatório.
+- Vence quem tiver mais acertos. Em empate, vence quem concluiu a tentativa em menor tempo total, contado desde o início da primeira pergunta; se persistir, desempate aleatório.
 - O terceiro lugar é decidido entre os dois perdedores das semifinais.
 - Uma chave pode incluir classificação automática sem duelo quando o total não é potência de 2.
 

@@ -1,0 +1,9 @@
+.test-runtime/
+qa-*/
+output/
+*.sql
+*.cjs
+*.py
+*.docx
+*.json
+README.md

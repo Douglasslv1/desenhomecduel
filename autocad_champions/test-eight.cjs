@@ -12,9 +12,54 @@ async function request(route,body,token){
  const result=await response.json();if(!response.ok)throw Error(`${route}: ${result.message||result.msg||result.error_description||JSON.stringify(result)}`);return result;
 }
 async function rpc(session,fn,args={}){return request('/rest/v1/rpc/'+fn,args,session.access_token)}
+async function playV2(mode){
+ const expected=mode==='level'?'leveling':'knockout';let submitted=0,expired=0;
+ const sets=new Map();
+ for(let pass=0;pass<12;pass++){
+  const progress=await Promise.all(sessions.map(async(session,i)=>{
+   let state=await rpc(session,'ac_state');
+   if(state.disqualified||!state.active||state.active.stage!==expected)return false;
+   const run=state.active.id;let changed=false;
+   for(let q=0;q<10&&state.active?.id===run;q++){
+    if(state.questions.length!==1)throw Error('O servidor deve enviar somente a pergunta atual');
+    const current=state.questions[0],key=(state.active.match_id||'leveling')+':'+state.active.position,value=JSON.stringify(current);
+    if(sets.has(key)&&sets.get(key)!==value)throw Error('Pergunta divergente entre adversários ou no nivelamento');sets.set(key,value);
+    const result=await rpc(session,'ac_submit',{p_run:run,p_question:current.id,p_choice:(i+current.id)%current.op.length});
+    if(result.accepted)submitted++;else if(result.expired)expired++;else throw Error('Resposta não reconhecida');
+    changed=true;state=await rpc(session,'ac_state');
+   }
+   if(changed)console.log(`${session.name}: etapa respondida`);return changed;
+  }));
+  if(!progress.some(Boolean))break;
+ }
+ const state=await rpc(sessions[0],'ac_state');
+ if(mode==='level'){
+  if(state.phase!=='leveling'||!state.leveling.ready)throw Error('O nivelamento ainda não está pronto para formar o mata-mata');
+  console.log(JSON.stringify({stage:'leveling',submitted,expired,...state.leveling},null,2));return;
+ }
+ if(state.phase!=='finished')throw Error('O mata-mata ainda não terminou');
+ const standard=state.matches.filter(m=>!m.third),last=Math.max(...standard.map(m=>m.round)),final=standard.find(m=>m.round===last),third=state.matches.find(m=>m.third);
+ const report={participants:total,submitted,expired,phase:state.phase,played:state.matches.filter(m=>m.p1&&m.p2).length,
+  automatic:state.matches.filter(m=>m.round===1&&m.winner&&(!m.p1||!m.p2)).length,champion:final?.winner,
+  runnerUp:final?.winner_id===final?.p1_id?final?.p2:final?.p1,third:third?.winner,matches:state.matches};
+ fs.writeFileSync(path.join(__dirname,`resultado-teste-v2-${total}.json`),JSON.stringify(report,null,2));
+ console.log(JSON.stringify({...report,matches:undefined},null,2));
+}
 async function main(){
  for(const session of sessions){const refreshed=await request('/auth/v1/token?grant_type=refresh_token',{refresh_token:session.refresh_token});Object.assign(session,{access_token:refreshed.access_token,refresh_token:refreshed.refresh_token});save()}
- if(process.argv[2]!=='play'){
+ const mode=process.argv[2]||'register';
+ if(!['register','play','level'].includes(mode))throw Error('Escolha register, level ou play');
+ if(mode!=='register'){
+  if(sessions.length!==total)throw Error(`Cadastre as ${total} sessões primeiro`);
+  const probe=await rpc(sessions[0],'ac_state');
+  if(probe.api_version===2){
+   if(mode==='level'&&probe.phase!=='leveling')throw Error('O professor precisa iniciar o nivelamento');
+   if(mode==='play'&&!['knockout','finished'].includes(probe.phase))throw Error('O professor precisa formar o mata-mata após o nivelamento');
+   return playV2(mode);
+  }
+  if(mode==='level')throw Error('Aplique competition-v2.sql antes de testar o nivelamento');
+ }
+ if(mode==='register'){
   for(let i=0;i<total;i++){
    let session=sessions[i];
    if(!session){const auth=await request('/auth/v1/signup',{});session={name:`Teste${total===8?'':'26'} ${String(i+1).padStart(2,'0')}`,access_token:auth.access_token,refresh_token:auth.refresh_token};if(!session.access_token)throw Error('Login anônimo não retornou uma sessão');sessions.push(session);save()}

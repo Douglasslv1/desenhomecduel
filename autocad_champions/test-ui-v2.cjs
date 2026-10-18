@@ -22,8 +22,9 @@ const initial={api_version:2,registered:true,started:true,phase:'leveling',playe
  assert.equal(s.element('quiz-title').textContent,'Etapa de nivelamento');assert.equal(s.element('question-timer').textContent,'Tempo restante: 1:30');
  s.clock.now+=76000;vm.runInContext('updateTimer()',s.ctx);assert.equal(s.element('question-timer').textContent,'Tempo restante: 0:14');assert.ok(s.element('question-timer').classes.has('urgent'));
  s.setState({...initial,server_now:'2026-10-16T12:01:16Z'});await vm.runInContext('refresh()',s.ctx);assert.equal(s.element('question-timer').textContent,'Tempo restante: 0:14');
- s.setState({...initial,active:{...initial.active,position:2,deadline:'2026-10-16T12:03:00Z'},server_now:'2026-10-16T12:01:31Z',questions:[{id:11,q:'Próxima pergunta',op:['A','B','C','D','E']}]});
- await vm.runInContext("answer('run1',10,0)",s.ctx);assert.equal(s.calls.find(c=>c.name==='ac_submit').args.p_run,'run1');assert.match(s.element('feedback').textContent,/Tempo esgotado/);assert.equal(s.element('question').textContent,'Próxima pergunta');
+ s.setState({...initial,active:{...initial.active,position:2,total:20,deadline:null},review:{question_id:10,statement:'Qual comando?',options:['A','B','C','D','E'],choice:null,correct_choice:1,timed_out:true},server_now:'2026-10-16T12:01:31Z',questions:[]});
+ await vm.runInContext("answer('run1',10,0)",s.ctx);assert.equal(s.calls.find(c=>c.name==='ac_submit').args.p_run,'run1');assert.match(s.element('feedback').textContent,/Tempo esgotado/);assert.equal(s.element('question').textContent,'Qual comando?');assert.match(s.element('options').innerHTML,/answer-correct/);assert.equal(s.element('question-next').hidden,false);
+ await s.element('question-next').onclick();assert.ok(s.calls.some(c=>c.name==='ac_continue'&&c.args.p_question===10));
  s.setState({...initial,disqualified:true,active:null});await vm.runInContext('refresh()',s.ctx);assert.match(s.element('waiting-text').textContent,/desclassificado/);
  const t=environment(true);const player={id:'p1',name:'Teste 01',can_disqualify:true,level_score:8,level_answered:10,level_done:true};
  t.setState({...initial,admin:true,players:[player],leveling:{done:4,total:4,ready:true},active:null});await vm.runInContext('refresh()',t.ctx);

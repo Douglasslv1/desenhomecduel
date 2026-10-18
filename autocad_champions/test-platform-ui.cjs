@@ -29,5 +29,11 @@ function env(teacher){
  assert.ok(s.calls.some(c=>c.name==='cp_resolve'));assert.ok(s.calls.some(c=>c.name==='cp_rpc'&&c.args.p_edition==='edition1'));assert.equal(s.$('login').hidden,false);
  assert.equal(await vm.runInContext("rpc('ac_state').then(()=>true)",s.ctx),true);
  const empty=env(false);await assert.rejects(()=>vm.runInContext("rpc('ac_join',{p_name:'Sem campeonato'})",empty.ctx),/Selecione um campeonato/);
+ const owner=env(true);await vm.runInContext('openPlatform();',owner.ctx);vm.runInContext("disciplineId='drawing';renderPortal()",owner.ctx);
+ assert.equal(owner.$('teacher-access').hidden,false);owner.$('teacher-user-id').value='professor@escola.test';owner.$('teacher-access-form').onsubmit({preventDefault(){}});await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(owner.calls.find(c=>c.name==='cp_assign_teacher').args.p_identity,'professor@escola.test');
+ vm.runInContext('catalog.owner=false;renderPortal()',owner.ctx);assert.equal(owner.$('teacher-access').hidden,true);assert.equal(owner.$('teacher-user-id').disabled,true);
+ const before=owner.calls.length;owner.$('teacher-access-form').onsubmit({preventDefault(){}});await new Promise(resolve=>setImmediate(resolve));assert.equal(owner.calls.length,before);
+ assert.match(html, /id="teacher-user-id" type="email"/);
  console.log('OK: disciplinas, bloqueio de banco vazio, criação e seleção de edição, links, formulário de questões, inscrição por código e consultas com escopo.');
 })().catch(e=>{console.error(e);process.exitCode=1});

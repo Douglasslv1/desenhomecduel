@@ -1,4 +1,5 @@
 let practiceCatalog=[],practiceState=null;
+const practiceReviewed=new Map();
 const practiceStorage='champions-practice-run';
 function savePracticeRun(id){try{id?sessionStorage.setItem(practiceStorage,id):sessionStorage.removeItem(practiceStorage)}catch{}}
 async function loadPractice(){
@@ -22,29 +23,40 @@ function fillPracticeCount(){
 }
 function renderPractice(){
  const s=practiceState;if(!s)return;
+ const f=s.feedback;let reviewed=practiceReviewed.get(s.id)===f?.number;
+ try{reviewed=reviewed||sessionStorage.getItem(`practice-reviewed:${s.id}`)===String(f?.number)}catch{}
+ const reviewing=!!f&&!reviewed;
+ $('practice-next').hidden=!reviewing;
+ if(reviewing){
+  show('practice-quiz');$('practice-context').textContent=`${s.discipline} · ${s.bank}`;
+  $('practice-progress').textContent=`Questão ${f.number} de ${s.total} · ${s.score} acertos`;
+  $('practice-question').textContent=f.statement;$('practice-options').innerHTML=reviewOptions(f);
+  $('practice-feedback').hidden=false;$('practice-feedback').textContent=reviewMessage(f);
+  $('practice-next').textContent=s.finished?'Ver resultado →':'Próxima questão →';return;
+ }
  if(s.finished){
   show('practice-result');$('practice-score').textContent=`${s.score} de ${s.total}`;
   $('practice-result-description').textContent=`${s.discipline} · ${s.bank}. Você acertou ${s.score} e errou ${s.total-s.score} questões (${Math.round(s.score/s.total*100)}% de aproveitamento).`;
-  renderPracticeFeedback('practice-final-feedback',s.feedback);return;
+  $('practice-final-feedback').hidden=true;return;
  }
  show('practice-quiz');$('practice-context').textContent=`${s.discipline} · ${s.bank}`;
  $('practice-progress').textContent=`Questão ${s.question.number} de ${s.total} · ${s.score} acertos`;
  $('practice-question').textContent=s.question.statement;
  $('practice-options').innerHTML=s.question.options.map((option,i)=>`<button type="button" class="option" data-practice-choice="${i}">${esc(option)}</button>`).join('');
- renderPracticeFeedback('practice-feedback',s.feedback);
+ $('practice-feedback').hidden=true;
 }
-function renderPracticeFeedback(id,feedback){
- const box=$(id);box.hidden=!feedback;if(!feedback)return;
- box.dataset.result=feedback.correct?'correct':'incorrect';
- box.innerHTML=`<strong>${feedback.correct?'Você acertou!':'Vamos aprender com essa resposta'}</strong><p>Questão anterior: ${esc(feedback.statement)}</p><p>Resposta correta: <b>${esc(feedback.correct_option)}</b></p>`;
-}
+$('practice-next').onclick=()=>{if(busy||!practiceState?.feedback)return;
+ practiceReviewed.set(practiceState.id,practiceState.feedback.number);
+ try{sessionStorage.setItem(`practice-reviewed:${practiceState.id}`,String(practiceState.feedback.number))}catch{}
+ renderPractice();
+};
 $('practice-discipline').onchange=fillPracticeBanks;
 $('practice-bank').onchange=fillPracticeCount;
 $('practice-form').onsubmit=e=>{e.preventDefault();task(async()=>{
  practiceState=await rpc('cp_practice_start',{p_bank:$('practice-bank').value,p_count:Number($('practice-count').value)});
  savePracticeRun(practiceState.id);renderPractice();
 })};
-$('practice-options').onclick=e=>{const button=e.target.closest('[data-practice-choice]');if(!button||busy)return;
+$('practice-options').onclick=e=>{const button=e.target.closest('[data-practice-choice]');if(!button||button.disabled||busy||!$('practice-next').hidden)return;
  const previous=practiceState;
  task(async()=>{
   $('practice-options').querySelectorAll('button').forEach(b=>b.disabled=true);

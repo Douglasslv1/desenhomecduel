@@ -49,6 +49,7 @@ window.ChampionsExperience=(()=>{
  }
  function onState(state,{teacher=false}={}){
   if(!teacher)resetWaiting();
+  if(state.review){return}
   if(state.disqualified||state.edition?.archived){clear();return}
   const event=eventFor(state,teacher);if(!event)return;
   if(!teacher&&!state.active){

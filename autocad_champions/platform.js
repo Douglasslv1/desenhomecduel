@@ -2,7 +2,7 @@ let catalog=null,disciplineId=null,editingBank=null,bankQuestions=[];
 document.body.classList.toggle('teacher-view',teacher);
 const phaseLabel=phase=>({registration:'Inscrições abertas',leveling:'Nivelamento',knockout:'Mata-mata',finished:'Encerrado'}[phase]||phase);
 function entryUrl(code,professor=false){const url=new URL(location.href);url.search='';url.hash='';url.searchParams.set('campeonato',code);if(professor)url.searchParams.set('professor','true');return url.href}
-function stopEdition(){editionId=null;state=null;deadlineAt=0;renderedPhase=null;reviewKey=null;$('answer-review').hidden=true;window.ChampionsExperience?.clear();projection(false);$('edition-context').hidden=true}
+function stopEdition(){editionId=null;state=null;deadlineAt=0;renderedPhase=null;window.ChampionsExperience?.clear();projection(false);$('edition-context').hidden=true}
 async function openPlatform(){
  if(new URLSearchParams(location.search).has('simulado')){await loadPractice();return}
  const code=new URLSearchParams(location.search).get('campeonato');
@@ -24,6 +24,9 @@ function renderPortal(){
  return `<button type="button" class="discipline-card ${d.id===disciplineId?'selected':''}" data-discipline="${esc(d.id)}"><span class="discipline-symbol">${d.name==='Desenho Mecânico'?'⚙':'◈'}</span><strong>${esc(d.name)}</strong><span>${d.banks.length} banco(s) · ${count} questões</span><small>${count?'Abrir disciplina →':'Aguardando questões'}</small></button>`;
  }).join('');
  $('new-discipline-form').hidden=!catalog.owner;
+ $('teacher-access').hidden=!catalog.owner;
+ $('teacher-user-id').disabled=!catalog.owner;
+ $('teacher-list').innerHTML='';
  $('discipline-workspace').hidden=!discipline;
  if(!discipline)return;
  $('discipline-name').textContent=discipline.name;
@@ -58,12 +61,12 @@ $('entry-form').onsubmit=e=>{e.preventDefault();task(async()=>{
  const edition=await rpc('cp_resolve',{p_code:$('entry-code').value.trim()});
  history.replaceState(null,'',entryUrl(edition.code));editionId=edition.id;await refresh();startPolling();
 })};
-$('teacher-access-form').onsubmit=e=>{e.preventDefault();task(async()=>{
+$('teacher-access-form').onsubmit=e=>{e.preventDefault();if(!catalog?.owner)return;task(async()=>{
  await rpc('cp_assign_teacher',{p_discipline:disciplineId,p_identity:$('teacher-user-id').value.trim(),p_allowed:true});$('teacher-access-form').reset();await loadPortal();
 })};
 $('teacher-list').onclick=e=>task(async()=>{const button=e.target.closest('[data-remove-teacher]');if(button&&await confirmAction('Este professor deixará de acessar os bancos e os campeonatos desta disciplina.',{title:'Retirar acesso do professor?',confirmLabel:'Retirar acesso',danger:true})){await rpc('cp_set_teacher',{p_discipline:disciplineId,p_user:button.dataset.removeTeacher,p_allowed:false});await loadPortal()}});
 async function loadTeacherDirectory(id){
- const list=await rpc('cp_teacher_directory',{p_discipline:id});if(id!==disciplineId)return;
+ const list=await rpc('cp_teacher_directory',{p_discipline:id});if(id!==disciplineId||!catalog?.owner)return;
  $('teacher-list').innerHTML=list.map(user=>`<li><span>${esc(user.email||user.id)}${user.superadmin?' · Superadministrador':''}</span>${user.superadmin?'':`<button data-remove-teacher="${esc(user.id)}" type="button" class="secondary">Retirar acesso</button>`}</li>`).join('')||'<li>Nenhum professor atribuído. O superadministrador mantém acesso.</li>';
 }
 async function openBank(id){

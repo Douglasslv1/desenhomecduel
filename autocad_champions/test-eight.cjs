@@ -21,6 +21,7 @@ async function playV2(mode){
   const progress=await Promise.all(sessions.map(async(session,i)=>{try{
    let state=await rpc(session,'ac_state');
    if(state.disqualified||!state.active||state.active.stage!==expected)return false;
+   if(state.review){await rpc(session,'ac_continue',{p_run:state.active.id,p_question:state.review.question_id});state=await rpc(session,'ac_state');if(!state.active||state.active.stage!==expected)return true}
    const run=state.active.id;let changed=false;
    const questionsInRun=state.active.total||(expected==='leveling'?20:10);
    for(let q=0;q<questionsInRun&&state.active?.id===run;q++){
@@ -31,6 +32,7 @@ async function playV2(mode){
     if(result.accepted)submitted++;else if(result.expired)expired++;else throw Error('Resposta não reconhecida');
     if(delay)await new Promise(resolve=>setTimeout(resolve,delay));
     changed=true;state=await rpc(session,'ac_state');
+    if(state.review){await rpc(session,'ac_continue',{p_run:run,p_question:state.review.question_id});state=await rpc(session,'ac_state')}
    }
    if(changed)console.log(`${session.name}: etapa respondida`);return changed;
    }catch(e){const current=await rpc(session,'ac_state');if(current.disqualified){console.log(`${session.name}: desclassificado pelo professor; respostas interrompidas`);return false}throw e}

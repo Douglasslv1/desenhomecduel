@@ -22,7 +22,6 @@ async function init(){try{
 async function refresh(){const requestedEdition=editionId,version=++refreshVersion,next=await rpc('ac_state');
  if(requestedEdition!==editionId||version!==refreshVersion)return;
  state=next;$('message').textContent='';
- renderAnswerReview();
  if(state.edition){$('edition-title').textContent=`${state.edition.discipline} · ${state.edition.name}`;$('edition-context').hidden=false;$('edition-code').textContent=`Código: ${state.edition.code}`}
  deadlineAt=state.active?.deadline?performance.now()+Math.max(0,Date.parse(state.active.deadline)-Date.parse(state.server_now)):0;
  if(teacher){if(!state.admin){show('teacher-login');$('message').textContent='Esta conta não está autorizada como professor.';return}show('teacher');renderTeacher();window.ChampionsExperience?.onState(state,{teacher:true});return}
@@ -85,7 +84,18 @@ function card(m){const bye=!!m.winner&&(!m.p1||!m.p2);const name=(p,score,id,dq)
  const action=canDisqualify?`<button type="button" class="card-disqualify" data-player="${esc(id)}" aria-label="Desclassificar ${esc(p)}" title="Desclassificar ${esc(p)}" ${busy?'disabled':''}>Desclassificar</button>`:'';
  return `<div class="competitor ${win?'win':''} ${dq?'disqualified':''}"><div class="competitor-identity"><span title="${esc(p||(bye?'Sem adversário':'A definir'))}">${esc(p||(bye?'Sem adversário':'A definir'))}</span>${action}</div><strong>${dq?'DQ':p?(score??'–'):''}${win?' ✓':''}</strong></div>`};
  return `<div class="match ${bye?'automatic':''}"><small>${m.status==='empty'?'Sem vencedor habilitado':m.winner&&(m.dq1||m.dq2)?'Vitória por desclassificação':bye?'Classificação automática':m.winner?'Concluído':m.p1&&m.p2?'Em disputa':'Aguardando classificados'}</small>${name(m.p1,m.s1,m.p1_id,m.dq1)}${name(m.p2,m.s2,m.p2_id,m.dq2)}</div>`}
-function renderQuiz(){const a=state.active,qs=state.questions||[],answered=state.answers||[];const next=qs.find(q=>!answered.some(x=>x.id===q.id));
+function renderQuiz(){
+ $('question-next').hidden=!state.review;
+ if(state.review){const f=state.review,a=state.active;
+  $('quiz-title').textContent=a.stage==='leveling'?'Etapa de nivelamento':'Duelo em andamento';
+  $('duel').textContent='Confira sua resposta';
+  $('progress').textContent=`Questão ${a.position-1} de ${a.total} · ${a.score} acertos`;
+  $('question').textContent=f.statement;$('options').innerHTML=reviewOptions(f);
+  $('feedback').textContent=reviewMessage(f);$('question-timer').hidden=true;
+  $('question-next').textContent=a.position>a.total?'Concluir etapa →':'Próxima questão →';return;
+ }
+ $('feedback').textContent='';
+ const a=state.active,qs=state.questions||[],answered=state.answers||[];const next=qs.find(q=>!answered.some(x=>x.id===q.id));
  const match=state.matches.find(m=>m.id===(a.match_id||a.id));
  $('quiz-title').textContent=a.stage==='leveling'?'Etapa de nivelamento':'Duelo em andamento';
  const total=a.total||(a.stage==='leveling'?20:10);
@@ -110,7 +120,7 @@ function updateTimer(){
  }
 }
 async function answer(match,question,choice){if(busy)return;busy=true;$('options').querySelectorAll('button').forEach(b=>b.disabled=true);
- try{const r=await rpc(state.api_version===2?'ac_submit':'ac_answer',state.api_version===2?{p_run:match,p_question:question,p_choice:choice}:{p_match:match,p_question:question,p_choice:choice});$('feedback').textContent=r.expired?'Tempo esgotado. A resposta não foi aceita.':r.correct?'✓ Resposta correta!':'✕ Resposta incorreta.';await refresh();setTimeout(()=>$('feedback').textContent='',1800)}catch(e){try{await refresh()}catch{}error(e)}finally{busy=false}}
+ try{await rpc(state.api_version===2?'ac_submit':'ac_answer',state.api_version===2?{p_run:match,p_question:question,p_choice:choice}:{p_match:match,p_question:question,p_choice:choice});await refresh()}catch(e){try{await refresh()}catch{}error(e)}finally{busy=false}}
 $('join').onsubmit=async e=>{e.preventDefault();try{await rpc('ac_join',{p_name:$('name').value.trim()});await refresh()}catch(e){error(e)}};
 $('start').onclick=async()=>{if(busy||!await confirmAction('As inscrições serão encerradas e todos terão 20 questões, com 1min30s por questão. O relógio começa agora para todos os inscritos. No mata-mata são dez questões por duelo.',{title:'Iniciar o nivelamento?',confirmLabel:'Iniciar nivelamento'}))return;busy=true;try{await rpc('ac_start');await refresh()}catch(e){error(e)}finally{busy=false}};
 $('knockout').onclick=async()=>{if(busy||!await confirmAction('Os confrontos serão formados por desempenho. As vagas automáticas serão atribuídas aos melhores resultados e o relógio das primeiras partidas começa assim que forem formadas.',{title:'Vamos para o mata-mata?',confirmLabel:'Formar confrontos'}))return;busy=true;try{await rpc('ac_start_knockout');await refresh()}catch(e){error(e)}finally{busy=false}};
@@ -137,14 +147,12 @@ function projection(enabled){document.body.classList.toggle('projection-mode',en
 $('projection').onclick=()=>projection(true);
 $('projection-exit').onclick=()=>projection(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')projection(false)});
-let reviewKey=null;
-function renderAnswerReview(){
- const feedback=state?.feedback,visible=!teacher&&!!feedback&&!state.disqualified;
- $('answer-review').hidden=!visible;if(!visible){reviewKey=null;return}
- const key=`${feedback.run_id}:${feedback.question_id}`;if(reviewKey===key)return;reviewKey=key;
- $('answer-review').dataset.result=feedback.correct?'correct':'incorrect';
- $('review-outcome').textContent=feedback.timed_out?'Tempo esgotado na última questão':feedback.correct?'Você acertou a última questão!':'Confira a resposta da última questão';
- $('review-question').textContent=feedback.statement;
- $('review-correct').textContent=`Resposta correta: ${feedback.correct_option}`;
-}
+function reviewMessage(f){return f.timed_out?'Tempo esgotado. Confira a resposta correta em verde.':f.correct?'✓ Você acertou!':'✕ Você errou. Confira a resposta correta em verde.'}
+function reviewOptions(f){return (f.options||[]).map((option,i)=>{
+ const correct=i===f.correct_choice,selected=i===f.choice;
+ return `<button type="button" class="option ${correct?'answer-correct':selected?'answer-incorrect':''}" disabled>${esc(option)}${correct?' <strong>✓ Correta</strong>':selected?' <strong>✕ Sua resposta</strong>':''}</button>`;
+}).join('')}
+$('question-next').onclick=async()=>{if(busy||!state?.review)return;busy=true;$('question-next').disabled=true;
+ try{await rpc('ac_continue',{p_run:state.active.id,p_question:state.review.question_id});await refresh()}catch(e){error(e)}finally{busy=false;$('question-next').disabled=false}
+};
 // platform.js instala os controles de disciplinas e então inicia a aplicação.

@@ -1,3 +1,5 @@
+Atualização mais recente: veja [correção na própria pergunta e professores por e-mail](ATUALIZACAO_CORRECAO_NA_PERGUNTA.md). Aplicar `platform-answer-review.sql` após a atualização de simulados.
+
 # Atualização atual da plataforma
 
 Consulte **ATUALIZACAO_SIMULADOS_E_NIVELAMENTO.md**. A versão atual identifica a conta administrativa existente como superadministrador, atribui professores por disciplina e e-mail/UUID, usa vinte questões no nivelamento e dez no mata-mata, mostra o gabarito após cada resposta e inclui simulados independentes por disciplina.

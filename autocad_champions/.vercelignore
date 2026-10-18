@@ -12,3 +12,8 @@ platform-sections.html
 practice-sections.html
 preview-26.html
 *.zip
+
+.env
+.env.*
+!api/
+!api/teachers.js

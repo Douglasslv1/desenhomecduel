@@ -1,4 +1,4 @@
-let catalog=null,disciplineId=null,editingBank=null,bankQuestions=[];
+let catalog=null,disciplineId=null,editingBank=null,bankQuestions=[],teacherAccounts=[];
 document.body.classList.toggle('teacher-view',teacher);
 const phaseLabel=phase=>({registration:'Inscrições abertas',leveling:'Nivelamento',knockout:'Mata-mata',finished:'Encerrado'}[phase]||phase);
 function entryUrl(code,professor=false){const url=new URL(location.href);url.search='';url.hash='';url.searchParams.set('campeonato',code);if(professor)url.searchParams.set('professor','true');return url.href}
@@ -12,11 +12,13 @@ async function openPlatform(){
 }
 async function loadPortal(){
  stopEdition();catalog=await rpc('cp_catalog');
- if(!catalog.owner&&!catalog.disciplines.length){show('teacher-login');throw Error('Esta conta não tem acesso a disciplinas. Solicite acesso ao administrador.')}
+ if(!catalog.owner&&!catalog.disciplines.length){show('teacher-login');const status=await rpc('cp_teacher_account_status');throw Error(status?.active===false?'Seu cadastro de professor está desativado. Procure o superadministrador.':'Esta conta não tem acesso a disciplinas. Solicite acesso ao administrador.')}
+ teacherAccounts=catalog.owner?await rpc('cp_teacher_accounts_list'):[];
  if(!catalog.disciplines.some(d=>d.id===disciplineId))disciplineId=null;
  show('portal');renderPortal();
 }
 function renderPortal(){
+ renderTeacherAccounts();
  $('profile-role').textContent=catalog.owner?'SUPERADMINISTRADOR':'PROFESSOR · ACESSO POR DISCIPLINA';
  const discipline=catalog.disciplines.find(d=>d.id===disciplineId);
  $('discipline-grid').innerHTML=catalog.disciplines.map(d=>{
@@ -40,6 +42,33 @@ function renderPortal(){
  if(catalog.owner)loadTeacherDirectory(discipline.id).catch(error);
 }
 async function task(fn){if(busy)return;busy=true;$('message').textContent='';try{await fn()}catch(e){error(e)}finally{busy=false}}
+function renderTeacherAccounts(){
+ const owner=!!catalog?.owner;$('teacher-accounts').hidden=!owner;
+ $('teacher-create-toggle').disabled=!owner;
+ if(!owner){$('teacher-create-form').hidden=true;$('teacher-create-form').reset();$('teacher-accounts-list').innerHTML='';return}
+ $('teacher-create-disciplines').innerHTML=catalog.disciplines.map(d=>`<label class="discipline-check"><input type="checkbox" name="teacher-discipline" value="${esc(d.id)}"> ${esc(d.name)}</label>`).join('');
+ $('teacher-accounts-list').innerHTML=(Array.isArray(teacherAccounts)?teacherAccounts:[]).map(t=>`<article class="teacher-account-row"><div><strong>${esc(t.name||t.email)}</strong>${t.name?`<p>${esc(t.email)}</p>`:''}<p class="muted">${esc((t.disciplines||[]).join(' · ')||'Nenhuma disciplina atribuída')}</p><span class="teacher-account-status ${t.active?'active':'inactive'}">${t.superadmin?'Superadministrador':t.active?'Ativo':'Desativado'}</span></div>${t.superadmin?'':`<button type="button" class="secondary" data-teacher-account="${esc(t.id)}" data-activate="${!t.active}">${t.active?'Desativar':'Reativar'}</button>`}</article>`).join('')||'<p class="muted">Nenhum professor cadastrado.</p>';
+}
+$('teacher-create-toggle').onclick=()=>{if(!catalog?.owner||busy)return;$('teacher-create-form').hidden=!$('teacher-create-form').hidden};
+$('teacher-create-cancel').onclick=()=>{$('teacher-create-form').hidden=true;$('teacher-create-form').reset()};
+$('teacher-create-form').onsubmit=e=>{e.preventDefault();if(!catalog?.owner)return;task(async()=>{
+ const disciplines=Array.from($('teacher-create-disciplines').querySelectorAll('input:checked'),input=>input.value);
+ if(!disciplines.length)throw Error('Selecione ao menos uma disciplina para o professor.');
+ const submit=$('teacher-create-submit');submit.disabled=true;submit.textContent='Cadastrando…';
+ try{
+  const {data:{session}}=await db.auth.getSession();if(!session)throw Error('Entre novamente como superadministrador.');
+  const response=await fetch('/api/teachers',{method:'POST',headers:{Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json'},body:JSON.stringify({name:$('teacher-create-name').value.trim(),email:$('teacher-create-email').value.trim(),password:$('teacher-create-password').value,disciplines})});
+  const result=await response.json().catch(()=>null);
+  if(!response.ok)throw Error(result?.error||'Não foi possível cadastrar. Verifique se a função de cadastro foi publicada.');
+  $('teacher-create-form').reset();$('teacher-create-form').hidden=true;await loadPortal();$('message').textContent=result.message;
+ }finally{submit.disabled=false;submit.textContent='Salvar professor'}
+})};
+$('teacher-accounts-list').onclick=e=>{if(!catalog?.owner)return;const button=e.target.closest('[data-teacher-account]');if(!button)return;task(async()=>{
+ const person=(Array.isArray(teacherAccounts)?teacherAccounts:[]).find(t=>t.id===button.dataset.teacherAccount);if(!person||person.superadmin)return;
+ const active=button.dataset.activate==='true';
+ if(!await confirmAction(active?'O professor voltará a acessar as disciplinas já atribuídas.':'O professor perderá o acesso a todas as disciplinas. Os campeonatos e resultados serão preservados.',{title:`${active?'Reativar':'Desativar'} ${person.name||person.email}?`,confirmLabel:active?'Reativar cadastro':'Desativar cadastro',danger:!active}))return;
+ await rpc('cp_teacher_set_active',{p_user:person.id,p_active:active});await loadPortal();
+})};
 $('discipline-grid').onclick=e=>{const button=e.target.closest('[data-discipline]');if(button){disciplineId=button.dataset.discipline;renderPortal()}};
 $('new-discipline-form').onsubmit=e=>{e.preventDefault();task(async()=>{disciplineId=await rpc('cp_create_discipline',{p_name:$('new-discipline-name').value.trim()});$('new-discipline-form').reset();await loadPortal()})};
 $('new-bank-form').onsubmit=e=>{e.preventDefault();task(async()=>{await rpc('cp_create_bank',{p_discipline:disciplineId,p_name:$('new-bank-name').value.trim()});$('new-bank-form').reset();await loadPortal()})};

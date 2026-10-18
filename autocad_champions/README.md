@@ -1,3 +1,12 @@
+# Atualização atual da plataforma
+
+Consulte **ATUALIZACAO_SIMULADOS_E_NIVELAMENTO.md**. A versão atual identifica a conta administrativa existente como superadministrador, atribui professores por disciplina e e-mail/UUID, usa vinte questões no nivelamento e dez no mata-mata, mostra o gabarito após cada resposta e inclui simulados independentes por disciplina.
+
+Execute **platform-learning-update.sql** após a migração multidisciplinas e publique juntos **index.html, app.js, platform.js, experience.js, practice.js e platform.css**. O pacote **publicacao-champions.zip** contém os seis arquivos. Todas as edições em andamento devem ser encerradas ou arquivadas antes da aplicação.
+
+Os testes novos são **test-learning.cjs** e **test-practice-ui.cjs**. Os guias abaixo registram etapas anteriores do projeto; use o guia atual para publicar esta atualização.
+
+---
 # Champions — plataforma de campeonatos por disciplina
 
 **Guia atual: ATUALIZACAO_MULTIDISCIPLINAS.md.** A versão local agora inclui disciplinas, bancos versionados, campeonatos independentes, permissões por professor e entrada de estudantes por código. Para atualizar, execute platform-multidisciplines.sql com a edição antiga encerrada e publique juntos index.html, app.js, platform.js, experience.js e platform.css. O pacote publicacao-champions.zip contém somente esses cinco arquivos. Não execute os SQLs antigos depois da migração da plataforma. Os detalhes abaixo descrevem versões anteriores e servem apenas como histórico.

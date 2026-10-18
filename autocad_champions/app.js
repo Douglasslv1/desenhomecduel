@@ -6,7 +6,7 @@ let editionId=null;
 let state=null,busy=false,pollingId=null,timerId=null,deadlineAt=0,lastExpiryRefresh=0,renderedPhase=null,refreshVersion=0;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const show=id=>['login','waiting','quiz','teacher-login','teacher','portal','entry','bank-editor'].forEach(x=>$(x).hidden=x!==id);
+const show=id=>['login','waiting','quiz','teacher-login','teacher','portal','entry','bank-editor','practice-menu','practice-quiz','practice-result'].forEach(x=>$(x).hidden=x!==id);
 const error=e=>{console.error(e);$('message').textContent=e.message||String(e)};
 async function confirmAction(message,options={}){return (await window.ChampionsExperience.confirm({message,...options})).confirmed}
 async function rpc(fn,args={}){
@@ -22,6 +22,7 @@ async function init(){try{
 async function refresh(){const requestedEdition=editionId,version=++refreshVersion,next=await rpc('ac_state');
  if(requestedEdition!==editionId||version!==refreshVersion)return;
  state=next;$('message').textContent='';
+ renderAnswerReview();
  if(state.edition){$('edition-title').textContent=`${state.edition.discipline} · ${state.edition.name}`;$('edition-context').hidden=false;$('edition-code').textContent=`Código: ${state.edition.code}`}
  deadlineAt=state.active?.deadline?performance.now()+Math.max(0,Date.parse(state.active.deadline)-Date.parse(state.server_now)):0;
  if(teacher){if(!state.admin){show('teacher-login');$('message').textContent='Esta conta não está autorizada como professor.';return}show('teacher');renderTeacher();window.ChampionsExperience?.onState(state,{teacher:true});return}
@@ -36,7 +37,8 @@ function renderTeacher(){
  if(renderedPhase!==state.phase){$('participants-details').open=!['knockout','finished'].includes(state.phase);renderedPhase=state.phase}
  $('teacher').classList.toggle('leveling-phase',state.phase==='leveling');
  $('count').textContent=`${players.length} inscritos`;
- $('roster').innerHTML=players.map(p=>`<div class="player-row"><span>${esc(p.name)}${p.disqualified?' · Desclassificado':''}</span><span class="muted">${p.level_score==null?'Aguardando nivelamento':`${p.level_score} acertos · ${Math.max(0,(p.level_answered||0)-p.level_score)} erros/tempo esgotado · ${p.level_answered||0}/10 respondidas${p.level_done?' · Concluído':''}`}</span>${p.can_disqualify?`<button type="button" class="disqualify" data-player="${esc(p.id)}">Desclassificar</button>`:p.disqualified?`<span class="muted" title="${esc(p.reason)}">${esc(p.reason)}</span>`:''}</div>`).join('')||'Nenhum estudante inscrito.';
+ const levelTotal=state.leveling_question_count||20;
+ $('roster').innerHTML=players.map(p=>`<div class="player-row"><span>${esc(p.name)}${p.disqualified?' · Desclassificado':''}</span><span class="muted">${p.level_score==null?'Aguardando nivelamento':`${p.level_score} acertos · ${Math.max(0,(p.level_answered||0)-p.level_score)} erros/tempo esgotado · ${p.level_answered||0}/${levelTotal} respondidas${p.level_done?' · Concluído':''}`}</span>${p.can_disqualify?`<button type="button" class="disqualify" data-player="${esc(p.id)}">Desclassificar</button>`:p.disqualified?`<span class="muted" title="${esc(p.reason)}">${esc(p.reason)}</span>`:''}</div>`).join('')||'Nenhum estudante inscrito.';
  $('start').disabled=archived||state.started||players.filter(p=>!p.disqualified).length<4||busy||state.api_version!==2;
  if(state.api_version!==2)$('message').textContent='Para iniciar uma nova edição, aplique competition-v2.sql no Supabase e atualize a página.';
  $('start').hidden=!!state.started;
@@ -44,7 +46,7 @@ function renderTeacher(){
  $('knockout').hidden=state.phase!=='leveling';
  $('knockout').disabled=!state.leveling?.ready||busy||archived;
  $('level-summary').hidden=state.phase!=='leveling';
- $('level-summary').textContent=state.phase==='leveling'?`${state.leveling?.done||0} de ${state.leveling?.total||0} participantes habilitados concluíram. Dez questões iguais para todos · 1min30s por questão. O mata-mata será organizado por acertos; tempo total desempata resultados iguais.`:'';
+ $('level-summary').textContent=state.phase==='leveling'?`${state.leveling?.done||0} de ${state.leveling?.total||0} participantes habilitados concluíram. ${levelTotal} questões iguais para todos · 1min30s por questão. No mata-mata são dez questões por duelo. O tempo total desempata resultados iguais.`:'';
  const standard=matches.filter(m=>!m.third),rounds=[...new Set(standard.map(m=>m.round))].sort((a,b)=>a-b);
  const last=rounds.at(-1),final=standard.find(m=>m.round===last),third=matches.find(m=>m.third);
  $('reset').hidden=archived;
@@ -55,7 +57,7 @@ function renderTeacher(){
  const current=pending.length?Math.min(...pending.map(m=>m.round)):null;
  const labels=r=>r===last?'Final':r===last-1?'Semifinais':r===last-2?'Quartas de final':r===last-3?'Oitavas de final':r===last-4?'Fase de 32':`Rodada ${r}`;
  const banner=archived?'EDIÇÃO ARQUIVADA · Resultados preservados':!state.started?`⏳ Inscrições abertas · ${players.length} participantes inscritos`:
-  state.phase==='leveling'?'📝 NIVELAMENTO · Todos respondem às mesmas dez questões':
+  state.phase==='leveling'?`📝 NIVELAMENTO · Todos respondem às mesmas ${levelTotal} questões`:
   state.phase==='finished'||final?.winner&&third?.winner?'🏆 CAMPEONATO ENCERRADO':
   current!==null?`⚔ ${labels(current)} · ${pending.filter(m=>m.round===current).length} confronto(s) em andamento. Os classificados avançam automaticamente ao concluir as 10 perguntas.`:
   '⏳ Aguardando classificação automática e formação da próxima rodada…';
@@ -86,9 +88,10 @@ function card(m){const bye=!!m.winner&&(!m.p1||!m.p2);const name=(p,score,id,dq)
 function renderQuiz(){const a=state.active,qs=state.questions||[],answered=state.answers||[];const next=qs.find(q=>!answered.some(x=>x.id===q.id));
  const match=state.matches.find(m=>m.id===(a.match_id||a.id));
  $('quiz-title').textContent=a.stage==='leveling'?'Etapa de nivelamento':'Duelo em andamento';
- $('duel').textContent=a.stage==='leveling'?'Dez questões iguais para todos':`Rodada ${a.round} · ${match?.p1||''} × ${match?.p2||''}`;
- $('progress').textContent=`${a.position?a.position-1:answered.length} / 10 respondidas · ${a.score??answered.filter(x=>x.correct).length} acertos`;
- if(!next){$('question').textContent='Você terminou as 10 questões. Aguarde seu adversário concluir.';$('options').innerHTML='';return}
+ const total=a.total||(a.stage==='leveling'?20:10);
+ $('duel').textContent=a.stage==='leveling'?`${total} questões iguais para todos`:`Rodada ${a.round} · ${match?.p1||''} × ${match?.p2||''}`;
+ $('progress').textContent=`${a.position?a.position-1:answered.length} / ${total} respondidas · ${a.score??answered.filter(x=>x.correct).length} acertos`;
+ if(!next){$('question').textContent=`Você terminou as ${total} questões. Aguarde seu adversário concluir.`;$('options').innerHTML='';return}
  $('question').textContent=next.q;
  $('options').innerHTML=next.op.map((o,i)=>`<button class="option" data-choice="${i}">${esc(o)}</button>`).join('');
  $('options').querySelectorAll('button').forEach(b=>b.onclick=()=>answer(a.id,next.id,Number(b.dataset.choice)));
@@ -109,7 +112,7 @@ function updateTimer(){
 async function answer(match,question,choice){if(busy)return;busy=true;$('options').querySelectorAll('button').forEach(b=>b.disabled=true);
  try{const r=await rpc(state.api_version===2?'ac_submit':'ac_answer',state.api_version===2?{p_run:match,p_question:question,p_choice:choice}:{p_match:match,p_question:question,p_choice:choice});$('feedback').textContent=r.expired?'Tempo esgotado. A resposta não foi aceita.':r.correct?'✓ Resposta correta!':'✕ Resposta incorreta.';await refresh();setTimeout(()=>$('feedback').textContent='',1800)}catch(e){try{await refresh()}catch{}error(e)}finally{busy=false}}
 $('join').onsubmit=async e=>{e.preventDefault();try{await rpc('ac_join',{p_name:$('name').value.trim()});await refresh()}catch(e){error(e)}};
-$('start').onclick=async()=>{if(busy||!await confirmAction('As inscrições serão encerradas e todos terão dez questões, com 1min30s por questão. O relógio começa agora para todos os inscritos.',{title:'Iniciar o nivelamento?',confirmLabel:'Iniciar nivelamento'}))return;busy=true;try{await rpc('ac_start');await refresh()}catch(e){error(e)}finally{busy=false}};
+$('start').onclick=async()=>{if(busy||!await confirmAction('As inscrições serão encerradas e todos terão 20 questões, com 1min30s por questão. O relógio começa agora para todos os inscritos. No mata-mata são dez questões por duelo.',{title:'Iniciar o nivelamento?',confirmLabel:'Iniciar nivelamento'}))return;busy=true;try{await rpc('ac_start');await refresh()}catch(e){error(e)}finally{busy=false}};
 $('knockout').onclick=async()=>{if(busy||!await confirmAction('Os confrontos serão formados por desempenho. As vagas automáticas serão atribuídas aos melhores resultados e o relógio das primeiras partidas começa assim que forem formadas.',{title:'Vamos para o mata-mata?',confirmLabel:'Formar confrontos'}))return;busy=true;try{await rpc('ac_start_knockout');await refresh()}catch(e){error(e)}finally{busy=false}};
 async function handleDisqualification(e){
  if(!teacher||!state?.admin)return;
@@ -134,4 +137,14 @@ function projection(enabled){document.body.classList.toggle('projection-mode',en
 $('projection').onclick=()=>projection(true);
 $('projection-exit').onclick=()=>projection(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')projection(false)});
+let reviewKey=null;
+function renderAnswerReview(){
+ const feedback=state?.feedback,visible=!teacher&&!!feedback&&!state.disqualified;
+ $('answer-review').hidden=!visible;if(!visible){reviewKey=null;return}
+ const key=`${feedback.run_id}:${feedback.question_id}`;if(reviewKey===key)return;reviewKey=key;
+ $('answer-review').dataset.result=feedback.correct?'correct':'incorrect';
+ $('review-outcome').textContent=feedback.timed_out?'Tempo esgotado na última questão':feedback.correct?'Você acertou a última questão!':'Confira a resposta da última questão';
+ $('review-question').textContent=feedback.statement;
+ $('review-correct').textContent=`Resposta correta: ${feedback.correct_option}`;
+}
 // platform.js instala os controles de disciplinas e então inicia a aplicação.

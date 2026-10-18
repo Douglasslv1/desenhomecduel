@@ -1,7 +1,7 @@
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto');
 const source=fs.readFileSync('app.js','utf8'),url=source.match(/SUPABASE_URL='([^']+)'/)[1],key=source.match(/SUPABASE_KEY='([^']+)'/)[1];
 async function main(){
- for(const name of ['index.html','app.js','platform.js','experience.js','platform.css']){
+ for(const name of ['index.html','app.js','platform.js','experience.js','practice.js','platform.css']){
   const res=await fetch('https://desenhomecduel.vercel.app/'+(name==='index.html'?'':name),{cache:'no-store',signal:AbortSignal.timeout(25000)});
   if(!res.ok)throw Error(`${name}: HTTP ${res.status}`);
   const remote=await res.text(),local=fs.readFileSync(name,'utf8');

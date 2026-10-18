@@ -22,7 +22,8 @@ async function playV2(mode){
    let state=await rpc(session,'ac_state');
    if(state.disqualified||!state.active||state.active.stage!==expected)return false;
    const run=state.active.id;let changed=false;
-   for(let q=0;q<10&&state.active?.id===run;q++){
+   const questionsInRun=state.active.total||(expected==='leveling'?20:10);
+   for(let q=0;q<questionsInRun&&state.active?.id===run;q++){
     if(state.questions.length!==1)throw Error('O servidor deve enviar somente a pergunta atual');
     const current=state.questions[0],key=(state.active.match_id||'leveling')+':'+state.active.position,value=JSON.stringify(current);
     if(sets.has(key)&&sets.get(key)!==value)throw Error('Pergunta divergente entre adversários ou no nivelamento');sets.set(key,value);

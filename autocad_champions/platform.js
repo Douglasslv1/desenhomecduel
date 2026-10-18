@@ -2,8 +2,9 @@ let catalog=null,disciplineId=null,editingBank=null,bankQuestions=[];
 document.body.classList.toggle('teacher-view',teacher);
 const phaseLabel=phase=>({registration:'Inscrições abertas',leveling:'Nivelamento',knockout:'Mata-mata',finished:'Encerrado'}[phase]||phase);
 function entryUrl(code,professor=false){const url=new URL(location.href);url.search='';url.hash='';url.searchParams.set('campeonato',code);if(professor)url.searchParams.set('professor','true');return url.href}
-function stopEdition(){editionId=null;state=null;deadlineAt=0;renderedPhase=null;window.ChampionsExperience?.clear();projection(false);$('edition-context').hidden=true}
+function stopEdition(){editionId=null;state=null;deadlineAt=0;renderedPhase=null;reviewKey=null;$('answer-review').hidden=true;window.ChampionsExperience?.clear();projection(false);$('edition-context').hidden=true}
 async function openPlatform(){
+ if(new URLSearchParams(location.search).has('simulado')){await loadPractice();return}
  const code=new URLSearchParams(location.search).get('campeonato');
  if(code){const edition=await rpc('cp_resolve',{p_code:code});editionId=edition.id;await refresh();return}
  if(teacher){await loadPortal();return}
@@ -16,6 +17,7 @@ async function loadPortal(){
  show('portal');renderPortal();
 }
 function renderPortal(){
+ $('profile-role').textContent=catalog.owner?'SUPERADMINISTRADOR':'PROFESSOR · ACESSO POR DISCIPLINA';
  const discipline=catalog.disciplines.find(d=>d.id===disciplineId);
  $('discipline-grid').innerHTML=catalog.disciplines.map(d=>{
  const count=d.banks.reduce((sum,b)=>sum+b.count,0);
@@ -26,12 +28,13 @@ function renderPortal(){
  if(!discipline)return;
  $('discipline-name').textContent=discipline.name;
  $('bank-grid').innerHTML=discipline.banks.map(b=>`<article class="bank-card"><h4>${esc(b.name)}</h4><p>${b.count} questões · versão ${b.revision}</p><button data-edit-bank="${esc(b.id)}" type="button">Gerenciar questões</button></article>`).join('')||'<p>Nenhum banco criado.</p>';
- $('edition-bank').innerHTML=discipline.banks.map(b=>`<option value="${esc(b.id)}" ${b.count<10?'disabled':''}>${esc(b.name)} · ${b.count} questões${b.count<10?' · mínimo 10':''}</option>`).join('');
- $('create-edition-btn').disabled=!discipline.banks.some(b=>b.count>=10);
+ $('edition-bank').innerHTML=discipline.banks.map(b=>`<option value="${esc(b.id)}" ${b.count<20?'disabled':''}>${esc(b.name)} · ${b.count} questões${b.count<20?' · mínimo 20':''}</option>`).join('');
+ $('create-edition-btn').disabled=!discipline.banks.some(b=>b.count>=20);
  const editions=catalog.editions.filter(e=>e.discipline_id===disciplineId);
  $('edition-list').innerHTML=editions.map(e=>`<article class="edition-card"><div><h4>${esc(e.name)}</h4><p>${e.archived?'Arquivada':esc(phaseLabel(e.phase))} · ${e.players} participantes · banco v${e.bank_revision}</p><span class="code-label">${esc(e.code)}</span></div><div class="edition-actions"><button data-open-edition="${esc(e.id)}" type="button">${e.archived?'Ver resultados':'Abrir painel'}</button>${e.archived?'':`<button data-share-code="${esc(e.code)}" type="button" class="secondary">Link dos estudantes</button>`}</div></article>`).join('')||'<p class="muted">Nenhum campeonato criado. Escolha um banco para abrir a primeira edição.</p>';
  $('teacher-access').hidden=!catalog.owner;
- $('teacher-list').innerHTML=(discipline.teachers||[]).map(id=>`<li><code>${esc(id)}</code><button data-remove-teacher="${esc(id)}" type="button" class="secondary">Retirar acesso</button></li>`).join('');
+ $('teacher-list').innerHTML='';
+ if(catalog.owner)loadTeacherDirectory(discipline.id).catch(error);
 }
 async function task(fn){if(busy)return;busy=true;$('message').textContent='';try{await fn()}catch(e){error(e)}finally{busy=false}}
 $('discipline-grid').onclick=e=>{const button=e.target.closest('[data-discipline]');if(button){disciplineId=button.dataset.discipline;renderPortal()}};
@@ -56,9 +59,13 @@ $('entry-form').onsubmit=e=>{e.preventDefault();task(async()=>{
  history.replaceState(null,'',entryUrl(edition.code));editionId=edition.id;await refresh();startPolling();
 })};
 $('teacher-access-form').onsubmit=e=>{e.preventDefault();task(async()=>{
- await rpc('cp_set_teacher',{p_discipline:disciplineId,p_user:$('teacher-user-id').value.trim(),p_allowed:true});$('teacher-access-form').reset();await loadPortal();
+ await rpc('cp_assign_teacher',{p_discipline:disciplineId,p_identity:$('teacher-user-id').value.trim(),p_allowed:true});$('teacher-access-form').reset();await loadPortal();
 })};
 $('teacher-list').onclick=e=>task(async()=>{const button=e.target.closest('[data-remove-teacher]');if(button&&await confirmAction('Este professor deixará de acessar os bancos e os campeonatos desta disciplina.',{title:'Retirar acesso do professor?',confirmLabel:'Retirar acesso',danger:true})){await rpc('cp_set_teacher',{p_discipline:disciplineId,p_user:button.dataset.removeTeacher,p_allowed:false});await loadPortal()}});
+async function loadTeacherDirectory(id){
+ const list=await rpc('cp_teacher_directory',{p_discipline:id});if(id!==disciplineId)return;
+ $('teacher-list').innerHTML=list.map(user=>`<li><span>${esc(user.email||user.id)}${user.superadmin?' · Superadministrador':''}</span>${user.superadmin?'':`<button data-remove-teacher="${esc(user.id)}" type="button" class="secondary">Retirar acesso</button>`}</li>`).join('')||'<li>Nenhum professor atribuído. O superadministrador mantém acesso.</li>';
+}
 async function openBank(id){
  editingBank=id;bankQuestions=await rpc('cp_bank_questions',{p_bank:id});
  const discipline=catalog.disciplines.find(d=>d.id===disciplineId),bank=discipline.banks.find(b=>b.id===id);

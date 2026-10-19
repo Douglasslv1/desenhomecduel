@@ -57,7 +57,7 @@ function renderTeacher(){
  const standard=matches.filter(m=>!m.third),rounds=[...new Set(standard.map(m=>m.round))].sort((a,b)=>a-b);
  const last=rounds.at(-1),final=standard.find(m=>m.round===last),third=matches.find(m=>m.third);
  $('reset').hidden=archived;
- $('reset').textContent='Arquivar esta edição';
+ $('reset').textContent='Finalizar e arquivar edição';
  $('reset').disabled=busy;
  if(final?.winner&&third?.winner)$('start').textContent='Campeonato encerrado';
  const pending=standard.filter(m=>m.p1&&m.p2&&!m.winner);
@@ -145,7 +145,7 @@ async function handleDisqualification(e){
 $('roster').onclick=handleDisqualification;
 $('bracket').onclick=handleDisqualification;
 $('reset').onclick=async()=>{
- if(busy||!await confirmAction('Os resultados serão preservados e novas respostas serão bloqueadas. Você poderá criar outra edição na página da disciplina.',{title:'Arquivar esta edição?',confirmLabel:'Arquivar edição',danger:true}))return;
+ if(busy||!await confirmAction('O campeonato será encerrado e arquivado. Novas respostas serão bloqueadas e os resultados existentes serão preservados. Confrontos pendentes ficarão sem vencedor. Esta ação não pode ser desfeita pelo painel.',{title:'Finalizar e arquivar esta edição?',confirmLabel:'Finalizar e arquivar',danger:true}))return;
  busy=true;$('reset').disabled=true;
  try{await rpc('cp_archive',{p_edition:editionId});await refresh()}catch(e){error(e)}finally{busy=false;$('reset').disabled=false}
 };

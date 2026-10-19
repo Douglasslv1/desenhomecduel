@@ -42,7 +42,21 @@ const rpc=(name,args=[])=>scalar(`select public.${name}(${args.map((_,i)=>'$'+(i
  await login(owner);await rpc('cp_archive',[edition]);const archived=await rpc('cp_question_report',[edition,'all']);assert.equal(archived.archived,true);assert.deepEqual(archived.questions,report.questions);
  await query('update public.cp_questions set statement=$1 where bank_id=$2 and id=1',['Enunciado novo para futuras edições',drawing.banks[0].id]);assert.equal((await rpc('cp_question_report',[edition,'all'])).questions[0].statement,report.questions[0].statement);
  const empty=await rpc('cp_create_edition',[drawing.id,drawing.banks[0].id,'Sem respostas']);const emptySchema=await scalar('select engine_schema from public.cp_editions where id=$1',[empty]);await query(`update ${emptySchema}.ac_settings set phase='finished' where id=1`);assert.deepEqual((await rpc('cp_question_report',[empty,'all'])).questions,[]);
- await db.exec('set role anon');await assert.rejects(()=>rpc('cp_question_report',[edition,'all']),/permission denied/);await db.exec('reset role');
+ // Migração corrige arquivos antigos e encerra novas edições ainda em andamento.
+ await db.exec(fs.readFileSync('platform-archive-finish.sql','utf8'));
+ const interrupted=await rpc('cp_create_edition',[drawing.id,drawing.banks[0].id,'Interrompida']);
+ const interruptedSchema=await scalar('select engine_schema from public.cp_editions where id=$1',[interrupted]);
+ await query(`update ${interruptedSchema}.ac_settings set phase='knockout',started=true where id=1`);
+ await login(other);await assert.rejects(()=>rpc('cp_archive',[interrupted]),/Sem acesso/);await login(owner);
+ await rpc('cp_archive',[interrupted]);await rpc('cp_archive',[interrupted]);
+ assert.equal(await scalar(`select phase from ${interruptedSchema}.ac_settings where id=1`),'finished');
+ const frozen=await rpc('cp_rpc',[interrupted,'ac_state',{}]);assert.equal(frozen.phase,'finished');assert.equal(frozen.active,null);assert.equal(frozen.edition.archived,true);
+ await assert.rejects(()=>rpc('cp_rpc',[interrupted,'ac_join',{p_name:'Aluno'}]),/arquivado/);
+ assert.deepEqual((await rpc('cp_question_report',[interrupted,'all'])).questions,[]);
+ await db.exec(fs.readFileSync('platform-archive-finish.sql','utf8'));
+ assert.equal((await rpc('cp_rpc',[interrupted,'ac_state',{}])).phase,'finished');
+ assert.deepEqual((await rpc('cp_question_report',[edition,'all'])).questions,report.questions);
+ await db.exec('set role anon');await assert.rejects(()=>rpc('cp_question_report',[edition,'all']),/permission denied/);await assert.rejects(()=>rpc('cp_archive',[interrupted]),/permission denied/);await db.exec('reset role');
  console.log('OK: ranking e percentuais, filtros por etapa, respostas repetidas, tempos esgotados, exclusão de desclassificados, históricos e questões preservados; aluno, professor de outra disciplina e professor desativado bloqueados.');
  await db.close();
 })().catch(async e=>{console.error(e);process.exitCode=1;await db.close()});

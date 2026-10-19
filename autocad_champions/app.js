@@ -30,6 +30,7 @@ async function refresh(){const requestedEdition=editionId,version=++refreshVersi
  const active=state.active;if(!active){show('waiting');$('waiting-text').textContent=state.phase==='leveling'?'Nivelamento concluído. Aguarde o professor formar os confrontos por desempenho.':state.phase==='finished'?'Campeonato encerrado! Confira o pódio no painel do professor.':state.started?'Aguardando classificação ou próxima rodada. Confira a árvore no projetor.':'Inscrição confirmada! Aguardando o professor iniciar o nivelamento.';window.ChampionsExperience?.onState(state);return}
  show('quiz');renderQuiz();window.ChampionsExperience?.onState(state);}
 function renderTeacher(){
+ $('question-report-open').hidden=state.phase!=='finished'||!state.admin;
  const players=state.players||[],matches=state.matches||[];
  const archived=!!state.edition?.archived;
  if(archived)players.forEach(p=>p.can_disqualify=false);
@@ -156,3 +157,25 @@ $('question-next').onclick=async()=>{if(busy||!state?.review)return;busy=true;$(
  try{await rpc('ac_continue',{p_run:state.active.id,p_question:state.review.question_id});await refresh()}catch(e){error(e)}finally{busy=false;$('question-next').disabled=false}
 };
 // platform.js instala os controles de disciplinas e então inicia a aplicação.
+let questionReportVersion=0;
+function closeQuestionReport(){questionReportVersion++;if($('question-report-dialog').open)$('question-report-dialog').close()}
+async function loadQuestionReport(){
+ const requestedEdition=editionId,version=++questionReportVersion,stage=$('question-report-stage').value;
+ $('question-report-status').textContent='Preparando a revisão da turma…';$('question-report-list').innerHTML='';
+ $('question-report-stage').disabled=true;
+ try{
+  const report=await rpc('cp_question_report',{p_edition:requestedEdition,p_stage:stage});
+  if(version!==questionReportVersion||requestedEdition!==editionId)return;
+  $('question-report-context').textContent=report.edition;
+  $('question-report-status').textContent=`${report.attempts} respostas · ${report.correct} acertos · ${report.wrong} erros de alternativa · ${report.timed_out} por tempo esgotado`;
+  $('question-report-list').innerHTML=report.questions.length?report.questions.map((q,i)=>`<article class="question-report-card"><div class="question-report-rank">${i+1}ª MAIS ERRADA · QUESTÃO ${esc(q.id)}</div><h3>${esc(q.statement)}</h3><p class="question-report-stats"><strong>${q.misses} de ${q.attempts} sem acerto (${q.miss_rate}%)</strong><br>${q.wrong} erros de alternativa · ${q.timed_out} por tempo esgotado · ${q.correct} acertos · ${q.students} participantes</p><ol type="A">${q.options.map((option,j)=>`<li class="${j===q.correct_choice?'report-correct':''}">${esc(option.replace(/^[A-E]\)\s*/,''))}${j===q.correct_choice?' <strong>✓ Resposta correta</strong>':''}</li>`).join('')}</ol></article>`).join(''):'<p class="question-report-empty">Nenhuma questão com erro ou tempo esgotado nesta etapa. Todos acertaram as respostas registradas!</p>';
+  if(!report.attempts)$('question-report-list').innerHTML='<p class="question-report-empty">Não há respostas registradas nesta etapa.</p>';
+ }catch(e){if(version===questionReportVersion)$('question-report-status').textContent=e.message||'Não foi possível carregar o relatório.'}
+ finally{if(version===questionReportVersion)$('question-report-stage').disabled=false}
+}
+$('question-report-open').onclick=()=>{if(!teacher||!state?.admin||state.phase!=='finished')return;
+ $('question-report-stage').value='all';$('question-report-context').textContent='';$('question-report-dialog').showModal();loadQuestionReport();
+};
+$('question-report-stage').onchange=loadQuestionReport;
+$('question-report-close').onclick=closeQuestionReport;
+$('question-report-dialog').oncancel=()=>{questionReportVersion++};

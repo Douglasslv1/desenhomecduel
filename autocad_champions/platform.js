@@ -2,7 +2,7 @@ let catalog=null,disciplineId=null,editingBank=null,bankQuestions=[],teacherAcco
 document.body.classList.toggle('teacher-view',teacher);
 const phaseLabel=phase=>({registration:'Inscrições abertas',leveling:'Nivelamento',knockout:'Mata-mata',finished:'Encerrado'}[phase]||phase);
 function entryUrl(code,professor=false){const url=new URL(location.href);url.search='';url.hash='';url.searchParams.set('campeonato',code);if(professor)url.searchParams.set('professor','true');return url.href}
-function stopEdition(){editionId=null;state=null;deadlineAt=0;renderedPhase=null;window.ChampionsExperience?.clear();projection(false);$('edition-context').hidden=true}
+function stopEdition(){closeQuestionReport();editionId=null;state=null;deadlineAt=0;renderedPhase=null;window.ChampionsExperience?.clear();projection(false);$('edition-context').hidden=true}
 async function openPlatform(){
  if(new URLSearchParams(location.search).has('simulado')){await loadPractice();return}
  const code=new URLSearchParams(location.search).get('campeonato');

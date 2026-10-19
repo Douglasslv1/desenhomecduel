@@ -1,3 +1,5 @@
+Atualização mais recente: [relatório das perguntas mais erradas ao final do campeonato](RELATORIO_PERGUNTAS_MAIS_ERRADAS.md). Aplicar `platform-question-report.sql`.
+
 Atualização mais recente: [cadastro e ativação de professores pelo superadmin](CADASTRO_PROFESSORES.md). Requer `platform-teacher-accounts.sql` e configuração única da função na Vercel.
 
 Atualização mais recente: veja [correção na própria pergunta e professores por e-mail](ATUALIZACAO_CORRECAO_NA_PERGUNTA.md). Aplicar `platform-answer-review.sql` após a atualização de simulados.

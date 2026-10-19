@@ -21,7 +21,13 @@ async function init(){try{
  }catch(e){error(e);if(teacher)show('teacher-login');else show('entry')}}
 async function refresh(){const requestedEdition=editionId,version=++refreshVersion,next=await rpc('ac_state');
  if(requestedEdition!==editionId||version!==refreshVersion)return;
+ if(teacher&&next.admin){
+  try{next.focus_events=await rpc('cp_focus_report',{p_edition:requestedEdition})}
+  catch(e){next.focus_error=true;console.error(e)}
+  if(requestedEdition!==editionId||version!==refreshVersion)return;
+ }
  state=next;$('message').textContent='';
+ window.ChampionsFocus?.sync();
  if(state.edition){$('edition-title').textContent=`${state.edition.discipline} · ${state.edition.name}`;$('edition-context').hidden=false;$('edition-code').textContent=`Código: ${state.edition.code}`}
  deadlineAt=state.active?.deadline?performance.now()+Math.max(0,Date.parse(state.active.deadline)-Date.parse(state.server_now)):0;
  if(teacher){if(!state.admin){show('teacher-login');$('message').textContent='Esta conta não está autorizada como professor.';return}show('teacher');renderTeacher();window.ChampionsExperience?.onState(state,{teacher:true});return}
@@ -38,7 +44,8 @@ function renderTeacher(){
  $('teacher').classList.toggle('leveling-phase',state.phase==='leveling');
  $('count').textContent=`${players.length} inscritos`;
  const levelTotal=state.leveling_question_count||20;
- $('roster').innerHTML=players.map(p=>`<div class="player-row"><span>${esc(p.name)}${p.disqualified?' · Desclassificado':''}</span><span class="muted">${p.level_score==null?'Aguardando nivelamento':`${p.level_score} acertos · ${Math.max(0,(p.level_answered||0)-p.level_score)} erros/tempo esgotado · ${p.level_answered||0}/${levelTotal} respondidas${p.level_done?' · Concluído':''}`}</span>${p.can_disqualify?`<button type="button" class="disqualify" data-player="${esc(p.id)}">Desclassificar</button>`:p.disqualified?`<span class="muted" title="${esc(p.reason)}">${esc(p.reason)}</span>`:''}</div>`).join('')||'Nenhum estudante inscrito.';
+ $('roster').innerHTML=players.map(p=>`<div class="player-row"><span>${esc(p.name)}${focusBadge(p.id)}${p.disqualified?' · Desclassificado':''}</span><span class="muted">${p.level_score==null?'Aguardando nivelamento':`${p.level_score} acertos · ${Math.max(0,(p.level_answered||0)-p.level_score)} erros/tempo esgotado · ${p.level_answered||0}/${levelTotal} respondidas${p.level_done?' · Concluído':''}`}</span>${p.can_disqualify?`<button type="button" class="disqualify" data-player="${esc(p.id)}">Desclassificar</button>`:p.disqualified?`<span class="muted" title="${esc(p.reason)}">${esc(p.reason)}</span>`:''}</div>`).join('')||'Nenhum estudante inscrito.';
+ if(state.focus_error)$('message').textContent='Não foi possível consultar as perdas de foco. Verifique a conexão e a aplicação de platform-focus-events.sql.';
  $('start').disabled=archived||state.started||players.filter(p=>!p.disqualified).length<4||busy||state.api_version!==2;
  if(state.api_version!==2)$('message').textContent='Para iniciar uma nova edição, aplique competition-v2.sql no Supabase e atualize a página.';
  $('start').hidden=!!state.started;
@@ -83,7 +90,7 @@ function renderTeacher(){
 function card(m){const bye=!!m.winner&&(!m.p1||!m.p2);const name=(p,score,id,dq)=>{const win=p&&(m.winner_id?m.winner_id===id:m.winner===p);
  const canDisqualify=teacher&&state?.admin&&!m.winner&&m.status==='waiting'&&!dq&&state.players?.some(player=>player.id===id&&player.can_disqualify);
  const action=canDisqualify?`<button type="button" class="card-disqualify" data-player="${esc(id)}" aria-label="Desclassificar ${esc(p)}" title="Desclassificar ${esc(p)}" ${busy?'disabled':''}>Desclassificar</button>`:'';
- return `<div class="competitor ${win?'win':''} ${dq?'disqualified':''}"><div class="competitor-identity"><span title="${esc(p||(bye?'Sem adversário':'A definir'))}">${esc(p||(bye?'Sem adversário':'A definir'))}</span>${action}</div><strong>${dq?'DQ':p?(score??'–'):''}${win?' ✓':''}</strong></div>`};
+ return `<div class="competitor ${win?'win':''} ${dq?'disqualified':''}"><div class="competitor-identity"><span title="${esc(p||(bye?'Sem adversário':'A definir'))}">${esc(p||(bye?'Sem adversário':'A definir'))}</span>${focusBadge(id,m.id)}${action}</div><strong>${dq?'DQ':p?(score??'–'):''}${win?' ✓':''}</strong></div>`};
  return `<div class="match ${bye?'automatic':''}"><small>${m.status==='empty'?'Sem vencedor habilitado':m.winner&&(m.dq1||m.dq2)?'Vitória por desclassificação':bye?'Classificação automática':m.winner?'Concluído':m.p1&&m.p2?'Em disputa':'Aguardando classificados'}</small>${name(m.p1,m.s1,m.p1_id,m.dq1)}${name(m.p2,m.s2,m.p2_id,m.dq2)}</div>`}
 function renderQuiz(){
  $('question-next').hidden=!state.review;
@@ -179,3 +186,14 @@ $('question-report-open').onclick=()=>{if(!teacher||!state?.admin||state.phase!=
 $('question-report-stage').onchange=loadQuestionReport;
 $('question-report-close').onclick=closeQuestionReport;
 $('question-report-dialog').oncancel=()=>{questionReportVersion++};
+
+// Sinais do navegador: não constituem prova de consulta externa.
+function focusBadge(playerId,matchId){
+ if(!teacher||!state?.admin)return '';
+ const report=state.focus_events?.find(p=>p.player_id===playerId);
+ const events=(report?.events||[]).filter(e=>!matchId||e.match_id===matchId);
+ if(!events.length)return '';
+ const details=events.map(e=>`${new Date(e.at).toLocaleString('pt-BR')} · ${e.kind==='hidden'?'Aba oculta':'Janela sem foco'}`).join('\n');
+ const key=`focus-${editionId}-${playerId}-${matchId||'all'}`,open=document.getElementById(key)?.open;
+ return `<details id="${esc(key)}" class="focus-alert" ${open?'open':''}><summary>⚠ ${events.length} perda(s) de foco</summary><div>${esc(details)}<p>Pode ser uma troca acidental ou notificação. Avalie antes de desclassificar.</p></div></details>`;
+}

@@ -1,3 +1,5 @@
+Atualização: [registro de perdas de foco nos confrontos](ATUALIZACAO_PERDAS_DE_FOCO.md). Aplicar `platform-focus-events.sql` e publicar também `focus.js`. Alertas ao professor e aviso ao aluno, sem desclassificação automática.
+
 Atualização mais recente: [relatório das perguntas mais erradas ao final do campeonato](RELATORIO_PERGUNTAS_MAIS_ERRADAS.md). Aplicar `platform-question-report.sql`.
 
 Atualização mais recente: [cadastro e ativação de professores pelo superadmin](CADASTRO_PROFESSORES.md). Requer `platform-teacher-accounts.sql` e configuração única da função na Vercel.

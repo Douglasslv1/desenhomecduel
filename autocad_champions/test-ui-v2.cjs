@@ -13,7 +13,7 @@ function environment(teacher=false){
   console:{error:()=>{}},document:{getElementById:element,addEventListener:(event,handler)=>events.set(event,handler),body:{classList:{toggle:()=>{}}}},
   window:{supabase:{createClient:()=>({})}},setInterval:fn=>{intervals.push(fn);return intervals.length},setTimeout:()=>{},confirm:()=>true,prompt:()=> 'Uso de ajuda externa'});
  ctx.window.ChampionsExperience={confirm:async options=>({confirmed:ctx.confirm(),value:options.input?ctx.prompt():''}),onState:()=>{}};
- vm.runInContext(source,ctx);ctx.mockRpc=async(name,args)=>{calls.push({name,args});return name==='ac_state'?response:{accepted:false,expired:true}};vm.runInContext('rpc=mockRpc',ctx);
+ vm.runInContext(source,ctx);ctx.mockRpc=async(name,args)=>{calls.push({name,args});return name==='cp_focus_report'?[]:name==='ac_state'?response:{accepted:false,expired:true}};vm.runInContext('rpc=mockRpc',ctx);
  return {ctx,element,calls,intervals,events,clock,setState:s=>{response=s}};
 }
 const initial={api_version:2,registered:true,started:true,phase:'leveling',player_id:'p1',matches:[],answers:[],server_now:'2026-10-16T12:00:00Z',active:{id:'run1',stage:'leveling',position:1,score:0,deadline:'2026-10-16T12:01:30Z'},questions:[{id:10,q:'Qual comando?',op:['A','B','C','D','E']}]};

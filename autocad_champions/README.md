@@ -1,3 +1,5 @@
+Atualiza??o mais recente: [alternativas em ordem aleat?ria](ALTERNATIVAS_ALEATORIAS.md). Publicar os arquivos do site; n?o exige SQL.
+
 Atualização: [registro de perdas de foco nos confrontos](ATUALIZACAO_PERDAS_DE_FOCO.md). Aplicar `platform-focus-events.sql` e publicar também `focus.js`. Alertas ao professor e aviso ao aluno, sem desclassificação automática.
 
 Atualização mais recente: [relatório das perguntas mais erradas ao final do campeonato](RELATORIO_PERGUNTAS_MAIS_ERRADAS.md). Aplicar `platform-question-report.sql`.

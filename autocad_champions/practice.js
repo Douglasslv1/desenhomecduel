@@ -30,7 +30,7 @@ function renderPractice(){
  if(reviewing){
   show('practice-quiz');$('practice-context').textContent=`${s.discipline} · ${s.bank}`;
   $('practice-progress').textContent=`Questão ${f.number} de ${s.total} · ${s.score} acertos`;
-  $('practice-question').textContent=f.statement;$('practice-options').innerHTML=reviewOptions(f);
+  $('practice-question').textContent=f.statement;$('practice-options').innerHTML=reviewOptions(f,`practice:${s.id}:${f.number}`);
   $('practice-feedback').hidden=false;$('practice-feedback').textContent=reviewMessage(f);
   $('practice-next').textContent=s.finished?'Ver resultado →':'Próxima questão →';return;
  }
@@ -42,7 +42,7 @@ function renderPractice(){
  show('practice-quiz');$('practice-context').textContent=`${s.discipline} · ${s.bank}`;
  $('practice-progress').textContent=`Questão ${s.question.number} de ${s.total} · ${s.score} acertos`;
  $('practice-question').textContent=s.question.statement;
- $('practice-options').innerHTML=s.question.options.map((option,i)=>`<button type="button" class="option" data-practice-choice="${i}">${esc(option)}</button>`).join('');
+ $('practice-options').innerHTML=optionOrder(`practice:${s.id}:${s.question.number}`,s.question.options.length).map((original,position)=>`<button type="button" class="option" data-practice-choice="${original}">${optionLabel(s.question.options[original],position)}</button>`).join('');
  $('practice-feedback').hidden=true;
 }
 $('practice-next').onclick=()=>{if(busy||!practiceState?.feedback)return;

@@ -98,7 +98,7 @@ function renderQuiz(){
   $('quiz-title').textContent=a.stage==='leveling'?'Etapa de nivelamento':'Duelo em andamento';
   $('duel').textContent='Confira sua resposta';
   $('progress').textContent=`Questão ${a.position-1} de ${a.total} · ${a.score} acertos`;
-  $('question').textContent=f.statement;$('options').innerHTML=reviewOptions(f);
+  $('question').textContent=f.statement;$('options').innerHTML=reviewOptions(f,`duel:${a.id}:${f.question_id}`);
   $('feedback').textContent=reviewMessage(f);$('question-timer').hidden=true;
   $('question-next').textContent=a.position>a.total?'Concluir etapa →':'Próxima questão →';return;
  }
@@ -111,7 +111,7 @@ function renderQuiz(){
  $('progress').textContent=`${a.position?a.position-1:answered.length} / ${total} respondidas · ${a.score??answered.filter(x=>x.correct).length} acertos`;
  if(!next){$('question').textContent=`Você terminou as ${total} questões. Aguarde seu adversário concluir.`;$('options').innerHTML='';return}
  $('question').textContent=next.q;
- $('options').innerHTML=next.op.map((o,i)=>`<button class="option" data-choice="${i}">${esc(o)}</button>`).join('');
+ $('options').innerHTML=optionOrder(`duel:${a.id}:${next.id}`,next.op.length).map((original,position)=>`<button class="option" data-choice="${original}">${optionLabel(next.op[original],position)}</button>`).join('');
  $('options').querySelectorAll('button').forEach(b=>b.onclick=()=>answer(a.id,next.id,Number(b.dataset.choice)));
  if(timerId===null)timerId=setInterval(updateTimer,250);
  updateTimer();
@@ -156,9 +156,23 @@ $('projection').onclick=()=>projection(true);
 $('projection-exit').onclick=()=>projection(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')projection(false)});
 function reviewMessage(f){return f.timed_out?'Tempo esgotado. Confira a resposta correta em verde.':f.correct?'✓ Você acertou!':'✕ Você errou. Confira a resposta correta em verde.'}
-function reviewOptions(f){return (f.options||[]).map((option,i)=>{
+const optionOrders=new Map();
+function optionOrder(key,count){
+ const storageKey=`champions-option-order-v1:${key}`;
+ const valid=order=>Array.isArray(order)&&order.length===count&&new Set(order).size===count&&order.every(i=>Number.isInteger(i)&&i>=0&&i<count);
+ let order=optionOrders.get(storageKey);
+ if(!valid(order)){try{order=JSON.parse(sessionStorage.getItem(storageKey))}catch{}}
+ if(!valid(order)){
+  order=Array.from({length:count},(_,i)=>i);
+  for(let i=count-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}
+  try{sessionStorage.setItem(storageKey,JSON.stringify(order))}catch{}
+ }
+ optionOrders.set(storageKey,order);return order;
+}
+function optionLabel(text,position){return `${String.fromCharCode(65+position)}) ${esc(String(text).replace(/^\s*[A-Ea-e][).]\s*/,''))}`}
+function reviewOptions(f,key=`duel:${f.run_id}:${f.question_id}`){return optionOrder(key,(f.options||[]).length).map((i,position)=>{
  const correct=i===f.correct_choice,selected=i===f.choice;
- return `<button type="button" class="option ${correct?'answer-correct':selected?'answer-incorrect':''}" disabled>${esc(option)}${correct?' <strong>✓ Correta</strong>':selected?' <strong>✕ Sua resposta</strong>':''}</button>`;
+ return `<button type="button" class="option ${correct?'answer-correct':selected?'answer-incorrect':''}" disabled>${optionLabel(f.options[i],position)}${correct?' <strong>✓ Correta</strong>':selected?' <strong>✕ Sua resposta</strong>':''}</button>`;
 }).join('')}
 $('question-next').onclick=async()=>{if(busy||!state?.review)return;busy=true;$('question-next').disabled=true;
  try{await rpc('ac_continue',{p_run:state.active.id,p_question:state.review.question_id});await refresh()}catch(e){error(e)}finally{busy=false;$('question-next').disabled=false}
